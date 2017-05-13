@@ -1,0 +1,36 @@
+[I 11:11:18.407 NotebookApp] Serving notebooks from local directory: /home/ubuntu/tencent_pcvr/src
+[I 11:11:18.407 NotebookApp] 0 active kernels 
+[I 11:11:18.407 NotebookApp] The Jupyter Notebook is running at: https://[all ip addresses on your system]:8888/
+[I 11:11:18.407 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 11:11:38.804 NotebookApp] 302 GET / (46.193.64.196) 0.58ms
+[I 11:11:38.932 NotebookApp] 302 GET /tree? (46.193.64.196) 0.70ms
+[I 11:12:22.660 NotebookApp] 302 POST /login?next=%2Ftree%3F (46.193.64.196) 1.04ms
+[I 11:12:49.072 NotebookApp] Interrupted...
+[I 11:12:49.073 NotebookApp] Shutting down kernels
+[I 11:16:49.934 NotebookApp] The port 8888 is already in use, trying another port.
+[I 11:16:49.940 NotebookApp] Serving notebooks from local directory: /home/ubuntu/tencent_pcvr/src
+[I 11:16:49.941 NotebookApp] 0 active kernels 
+[I 11:16:49.941 NotebookApp] The Jupyter Notebook is running at: https://[all ip addresses on your system]:8889/
+[I 11:16:49.941 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 11:18:42.274 NotebookApp] Interrupted...
+[I 11:18:42.274 NotebookApp] Shutting down kernels
+[I 11:19:52.713 NotebookApp] Serving notebooks from local directory: /home/ubuntu/tencent_pcvr/src
+[I 11:19:52.713 NotebookApp] 0 active kernels 
+[I 11:19:52.713 NotebookApp] The Jupyter Notebook is running at: https://[all ip addresses on your system]:8888/
+[I 11:19:52.713 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 11:22:54.955 NotebookApp] Creating new notebook in 
+[I 11:22:54.966 NotebookApp] Writing notebook-signing key to /home/ubuntu/.local/share/jupyter/notebook_secret
+[W 11:23:03.809 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20170513111952 (46.193.64.196) 5.97ms referer=https://52.15.143.152:8888/notebooks/Untitled.ipynb?kernel_name=python3
+[I 11:23:03.910 NotebookApp] Kernel started: 3b7d9ed9-3c61-4e49-a645-59ae0e1dfdd3
+[I 11:25:04.053 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:27:04.044 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:29:04.050 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:31:04.033 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:33:04.050 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:35:04.031 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:37:04.052 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:39:04.042 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:41:04.321 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:43:04.327 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:45:04.054 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
+[I 11:47:04.048 NotebookApp] Saving file at /main_pcvr_tencent.py.ipynb
