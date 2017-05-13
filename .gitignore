@@ -1,3 +1,5 @@
 src/*.pyc
 data/*
 !data/.gitkeep
+src/.ipynb_checkpoints/
+src/nohup.out
