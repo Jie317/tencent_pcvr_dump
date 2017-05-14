@@ -41,6 +41,7 @@ def clean_data(train_data):
 chunk_size = 10000
 reader = pd.read_csv(r'D:\dataScience\pre\new_generated_test.csv',
                      chunksize=chunk_size, )
+
 # seed = 0  seed尚未定义
 i = 0
 with open(r'D:\dataScience\pre\submission6.csv', 'a') as outfile:
