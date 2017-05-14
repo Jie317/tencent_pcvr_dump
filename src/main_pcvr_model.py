@@ -78,7 +78,7 @@ def metrics_PRFm(y_real, y_pred):
     return [P, R, Fm, TP, FP, FN, TN, real_positive, predicted_positives]
 
 
-def save_preds(preds, p='../data/results.csv'):
+def save_preds(preds, p):
     with open(p, 'w') as res, open('../data/pre/test.csv', 'r') as raw:
         res.write('id,click\n')
         header = raw.readline()
@@ -111,7 +111,7 @@ tbCallBack = TensorBoard(log_dir='../meta/tbGraph/',
              write_graph=True, write_images=True)
 
 input_length = 19
-max_feature = 50000
+max_feature = 700000
 print('Max feature:', max_feature)
 
 # 2 fix random seed for reproducibility
@@ -120,7 +120,7 @@ np.random.seed(7)
 # 3 build model or load last trained model
 start = time()
 if args.el or args.ct:
-    model = load_model('../trained_models/model_ctr_last.h5')
+    model = load_model('../trained_models/pcvr_model_last.h5')
 else:
     model = Sequential()
     model.add(Embedding(max_feature, 32, input_length = input_length))
@@ -152,7 +152,7 @@ if not args.el:
 
 
     # 5 fit the model (training)
-    data = pd.read_csv('../data/new_generated_train.csv').values
+    data = pd.read_csv('../data/pre/new_generated_train.csv').values
     data = (data[:, :-1], data[:, -1:])
     model.fit(*data,
               epochs=args.e,
@@ -169,8 +169,7 @@ if not args.ns:
 print('Runtime:', str(datetime.timedelta(seconds=int(time()-start))))
 # 7 calculate predictions
 print('Prediction')
-data_te = pd.read_csv('../data/new_generated_test.csv').values
+data_te = pd.read_csv('../data/pre/new_generated_test.csv').values
 predict_probas = np.ravel(model.predict_proba(data_te, batch_size=4096))
-p = '../data/results_%s.csv' % strftime('%c')
+p = '../data/results_%s.csv' % strftime('%m%d%H%M')
 save_preds(predict_probas, p=p)
-
