@@ -1,7 +1,6 @@
 #! /bin/bash
 
-# Script to samplify the commit and push steps. All the arguments are concatenated as the commmit 
-message.
+# Script to samplify the commit and push steps. All the arguments are concatenated as the commmit message.
 
 git add -A
 if [ $# -eq 0 ]; then
