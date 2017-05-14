@@ -20,12 +20,12 @@ from datetime import datetime
 数据清洗
 
 将标签由1|0,转换为1|-1
-使用FeatureHasher进行处理
 '''
 preproc = Pipeline([('fh',
                      FeatureHasher(n_features=2 ** 27,
                                    input_type='string',
                                    non_negative=False))])
+
 
 def clean_data(train_data):
     #    train_data['day'] = train_data['clickTime'].map(lambda x :int(str(x)[0:2]))

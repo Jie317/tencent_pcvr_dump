@@ -17,10 +17,10 @@ from sklearn.externals import joblib
 '''
 导入模型参数
 '''
-model_file = 'D:\dataScience\pre\model-avazu-sgd4.pkl'
+model_file = 'D:\dataScience\pre\model-avazu-sgd6.pkl'
 cls = joblib.load(model_file)
 
-preproc_file = 'D:\dataScience\pre\model-avazu-preproc4.pkl'
+preproc_file = 'D:\dataScience\pre\model-avazu-preproc6.pkl'
 preproc = joblib.load(preproc_file)
 
 '''
@@ -39,11 +39,12 @@ def clean_data(train_data):
 
 
 chunk_size = 10000
-reader = pd.read_csv(r'D:\dataScience\pre\test.csv',
+reader = pd.read_csv(r'D:\dataScience\pre\new_generated_test.csv',
                      chunksize=chunk_size, )
+
 # seed = 0  seed尚未定义
 i = 0
-with open(r'D:\dataScience\pre\submission5.csv', 'a') as outfile:
+with open(r'D:\dataScience\pre\submission6.csv', 'a') as outfile:
     outfile.write('instanceID, prob\n')
     for data in reader:
         i += 1
