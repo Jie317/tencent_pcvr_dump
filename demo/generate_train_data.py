@@ -32,3 +32,29 @@ ad_info = ad_info.drop(['creativeID', 'positionID'], axis=1)
 new_train = pd.concat([user_info, ad_info, action_info, train['label']], axis=1)
 
 new_train.to_csv('%snew_generated_train.csv' % d)
+
+
+
+
+'''
+训练数据标签列表
+age                 int64
+gender              int64
+education           int64
+marriageStatus      int64
+haveBaby            int64
+hometown            int64
+residence           int64
+adID                int64
+camgaignID          int64
+advertiserID        int64
+appID               int64
+appPlatform         int64
+sitesetID           int64
+positionType        int64
+clickTime           int64
+connectionType      int64
+telecomsOperator    int64
+instanceID          int64
+label               int64
+'''

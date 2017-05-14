@@ -39,3 +39,6 @@ ad_info = ad_info.drop(['creativeID', 'positionID'], axis=1)
 new_train = pd.concat([user_info, ad_info, action_info, train['label']], axis=1)
 
 new_train.to_csv('%snew_generated_test.csv' % d)
+
+'''
+'''
