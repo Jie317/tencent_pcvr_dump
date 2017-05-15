@@ -23,3 +23,40 @@
 - Jie: Benchmark on MLPs without the two lists
 - Yin:
 - Wenwen:
+
+
+About the methods of Random Walker's model
+
+PART I
+
+In his model, two models are used.
+Model 1. FREL : Follow the regularized leader - proximal
+an adaptive-learning-rate sparse logistic-regression with efficient L1-L2-regularization
+This model is implemented with python
+Input data: 21 original features + 8 additional features + 1 LSA feature + 19 gbdt features
+->output1
+
+Model 2. FFM  : Field-aware Factorization Machine
+This model is implemented with C++
+Input data:21 original features + 8 additional features + 19 gbdt features
+->output2
+
+PART II
+Model 1. FREL 
+Input data : (the data separated by sites and apps)
+L1->isapp->False->21 original features + 8 additional features + 1 LSA feature + 19 gbdt features
+L2->isapp->True ->21 original features + 8 additional features + 1 LSA feature + 19 gbdt features
+L1+L2->output3
+
+Model 2. FFM
+Input data:
+L1->isapp->False->Input data:21 original features + 8 additional features + 19 gbdt features
+L2->isapp->True->Input data:21 original features + 8 additional features + 19 gbdt features
+L1+L2->output4
+
+Part III
+Ensemble 
+output1+
+output2+
+output3+
+output4->output
