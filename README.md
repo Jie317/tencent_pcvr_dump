@@ -20,7 +20,7 @@
 - How to encode the two non-deterministic lists (user_installedapps and user_app_actions)?
 
 ### 4 What's going on?
-- Jie: Benchmark on MLPs without the two lists
+- Jie: Test FFM with avazu datasets preprocessed by Random Walker
 - Yin:
 - Wenwen:
 
