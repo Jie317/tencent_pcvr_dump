@@ -15,12 +15,20 @@ python3 index2.py
 
 # fm model 1
 python3 append_gbdt.py
+
+python3 convert_format.py ../fm_test_2 ../fm_train_2 # for test only
+
 ../fm/fm -k 8 -t 5 -l 0.00003 ../fm_test_2 ../fm_train_2
 
 # fm model 2
 python3 append_gbdt_1.py
+
+python3 convert_format.py ../fm_test_2_1 ../fm_train_2_1 # for test only
 ../fm/fm -k 8 -t 4 -l 0.00004 ../fm_test_2_1 ../fm_train_2_1
+
+python3 convert_format.py ../fm_test_2_2 ../fm_train_2_2 # for test only
 ../fm/fm -k 8 -t 10 -l 0.00005 ../fm_test_2_2 ../fm_train_2_2
+
 python3 split.py ../fm_test_2_split ../fm_test_2_1.out ../fm_test_2_2.out
 
 # ftrl model prepare
