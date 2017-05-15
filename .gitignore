@@ -4,3 +4,5 @@ data/*
 src/.ipynb_checkpoints/
 src/nohup.out
 results/
+trained_models/
+!trained_models/pcvr_model_last.h5
