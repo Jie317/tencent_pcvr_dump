@@ -25,7 +25,7 @@
 - Wenwen:
 
 
-About the methods of Random Walker's model
+##About the methods of Random Walker's model
 
 In his model, two models are used.
 ## PART I
@@ -37,7 +37,7 @@ In his model, two models are used.
 
 ### Model 2. FFM  : Field-aware Factorization Machine
 - This model is implemented with C++
-- Input data:21 original features + 8 additional features + 19 gbdt features
+- Input data: 21 original features + 8 additional features + 19 gbdt features
 - ->output2
 
 ## PART II
