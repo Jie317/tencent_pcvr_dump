@@ -55,7 +55,7 @@ In his model, two models are used.
 - L1+L2->output4
 
 ## Part III
-###Ensemble
+### Ensemble
 - output1+
 - output2+
 - output3+
