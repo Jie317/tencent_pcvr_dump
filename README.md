@@ -32,7 +32,7 @@
 
 - 1. 采用 one-hot 进行数据重构
 - Note: 源数值型特征的值归一化到 [0,1] 
--       categorical特征需要经过One-Hot编码成数值型，编码产生的所有特征同属于一个field，而特征的值只能是0或1
+- categorical特征需要经过One-Hot编码成数值型，编码产生的所有特征同属于一个field，而特征的值只能是0或1
         
 - 2. 对所有的feature 进行编码
 - 3. 对各个feature 根据所属的Field 进行编码
