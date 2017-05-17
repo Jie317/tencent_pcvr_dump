@@ -27,9 +27,8 @@
 
 About the methods of Random Walker's model
 
-##PART I
-
 In his model, two models are used.
+## PART I
 ### Model 1. FREL : Follow the regularized leader - proximal
 - an adaptive-learning-rate sparse logistic-regression with efficient L1-L2-regularization
 - This model is implemented with python
@@ -41,8 +40,10 @@ In his model, two models are used.
 - Input data:21 original features + 8 additional features + 19 gbdt features
 - ->output2
 
-##PART II
-### Input data : (the data separated by sites and apps)
+## PART II
+- note: the different between part 1 and 2 is about the feature of isapp
+### Model 1. FREL
+- Input data : (the data separated by sites and apps)
 - L1->isapp->False->21 original features + 8 additional features + 1 LSA feature + 19 gbdt features
 - L2->isapp->True ->21 original features + 8 additional features + 1 LSA feature + 19 gbdt features
 - L1+L2->output3
