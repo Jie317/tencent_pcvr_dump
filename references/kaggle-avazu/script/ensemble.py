@@ -60,7 +60,10 @@ def sub(result,testfile,output):
     r.close()
     o.close()
 
-files = ["../ftrl_1","../ftrl_2","../fm_test_2.out","../fm_test_2_split"]
+# files = ["../ftrl_1","../ftrl_2","../fm_test_2.out","../fm_test_2_split"]
+
+# test only (Jie)
+files = ["../fm_test_2.out","../fm_test_2_split"]
 weights = [1,1,1,1]
 ensemble(weights,files,"../ensemble")
 sub("../ensemble","../test","../ensemble_sub")

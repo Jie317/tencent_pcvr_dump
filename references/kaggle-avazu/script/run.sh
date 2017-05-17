@@ -18,31 +18,37 @@ python3 append_gbdt.py
 
 python3 convert_format.py ../fm_test_2 ../fm_train_2 # for test only
 
-../fm/fm -k 8 -t 5 -l 0.00003 ../fm_test_2 ../fm_train_2
+../fm/ffm-train -k 8 -t 5 -l 0.00003 ../fm_train_2 ../trained_model_2
+../fm/ffm-predict ../fm_test_2 ../trained_model_2 ../fm_test_2.out
 
 # fm model 2
 python3 append_gbdt_1.py
 
 python3 convert_format.py ../fm_test_2_1 ../fm_train_2_1 # for test only
-../fm/fm -k 8 -t 4 -l 0.00004 ../fm_test_2_1 ../fm_train_2_1
+../fm/ffm-train -k 8 -t 4 -l 0.00004 ../fm_train_2_1 ../trained_model_2_1
+../fm/ffm-predict ../fm_test_2_1 ../trained_model_2_1 ../fm_test_2_1.out
+
 
 python3 convert_format.py ../fm_test_2_2 ../fm_train_2_2 # for test only
-../fm/fm -k 8 -t 10 -l 0.00005 ../fm_test_2_2 ../fm_train_2_2
+../fm/ffm-train -k 8 -t 10 -l 0.00005 ../fm_train_2_2 ../trained_model_2_2
+../fm/ffm-predict ../fm_test_2_2 ../trained_model_2_2 ../fm_test_2_2.out
+
+
 
 python3 split.py ../fm_test_2_split ../fm_test_2_1.out ../fm_test_2_2.out
 
-# ftrl model prepare
-python3 prep_1.py
-python3 append.py
-python3 genDict.py
-python3 genM.py
-python lsa.py
+# # ftrl model prepare
+# python3 prep_1.py
+# python3 append.py
+# python3 genDict.py
+# python3 genM.py
+# python lsa.py
 
-# ftrl model 1
-python3 ftrl_1.py
+# # ftrl model 1
+# python3 ftrl_1.py
 
-# ftrl model 2
-python3 ftrl_2.py
+# # ftrl model 2
+# python3 ftrl_2.py
 
 # ensemble
 python3 ensemble.py
