@@ -41,7 +41,7 @@ In his model, two models are used.
 - ->output2
 
 ## PART II
-- note: the different between part 1 and 2 is about the feature of isapp
+- Note: the different between part 1 and 2 is about the feature of isapp
 ### Model 1. FREL
 - Input data : (the data separated by sites and apps)
 - L1->isapp->False->21 original features + 8 additional features + 1 LSA feature + 19 gbdt features
@@ -54,8 +54,8 @@ In his model, two models are used.
 - L2->isapp->True->Input data:21 original features + 8 additional features + 19 gbdt features
 - L1+L2->output4
 
-### Part III
-- Ensemble
+## Part III
+###Ensemble
 - output1+
 - output2+
 - output3+
