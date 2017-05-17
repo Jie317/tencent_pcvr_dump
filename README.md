@@ -36,7 +36,7 @@
         
 - 2. 对所有的feature 进行编码
 - 3. 对各个feature 根据所属的Field 进行编码
-- 4. 选取每一列里面所有有值的数据，查找其Field和Feature
+- 4. 选取每一列里面所有有值的数据(省略零值特征)，查找其Field和Feature
 - 5. 将数据重构成 Label Field:Feature:value Field:Feature:value Field:Feature:value Field:Feature:value ....样式
 
 
