@@ -25,7 +25,7 @@
 - Wenwen:
 
 
-##About the methods of Random Walker's model
+## About the methods of Random Walker's model
 
 In his model, two models are used.
 ## PART I
