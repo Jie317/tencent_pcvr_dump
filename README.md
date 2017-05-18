@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 ## Tencent pCVR competition
 
-### 1 Code structure
+### 1 Project structure
 #### 1.1 Preprocessing
 - Input: raw data files, including both training and test datasets
 - Output: pandas dataframes for training and test (no validation split)
@@ -13,17 +12,6 @@
 #### 1.3 Ensemble
 - Input: test result files
 - Output: final result file
-
-### 2 Progress
-- Synthesized new train and test datasets from raw csv files
-
-### 3 Problems
-- How to encode the two non-deterministic lists (user_installedapps and user_app_actions)?
-
-### 4 What's going on?
-- Jie: Test FFM with avazu datasets preprocessed by Random Walker
-- Yin:
-- Wenwen:
 
 
 ## How to code data for Field-Feature Model
@@ -43,7 +31,6 @@
 
 数据处理代码框架
 ```
-
 df1 = pd.read_csv(r'D:\dataScience\pre\new_generated_train.csv')
 
 获取某一列的全部数据
@@ -72,4 +59,18 @@ df3['1:3'] = (df11.iloc[:,0] == 23).astype(int)
 
 '''
 
-
+## Key points from the online discussion (05.18)
+- 1. Xgboost might works as well.
+- 2. Most of the time should be focused on feature engineering.
+- 3. Some rules may be applied, such as a user won't install again any app in his installed app list.
+- 4. How to deal with NANs in the data?
+- 5. Someone found similiar cvr in different age segmentations.
+- 6. Computation power (feasible with 8 cores and 16G RAM).
+- 7. Can we know the week day? This is important for the test data.
+- 8. Encoding IDs to vectors should work as well (a kaggle team won 2nd place before). 
+- 9. DNN works well just in research papers?
+- 10. How to deal with clickTime?
+- 11. FFM combines features itself, while it's better to add synthetic features.
+- 12. If undersampling is applied, log loss may need to be biased.
+- 13. Test data may not represent real values.
+- 14. ConversionTime is not too much important.
