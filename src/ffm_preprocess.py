@@ -22,11 +22,11 @@ def format_ffm(df, outp):
     all_cat_to_one_hot = []
 
     for c in cat_cols:
-        all_cat_to_one_hot.append(pd.get_dummies(data[c], prefix=c))
+        all_cat_to_one_hot.append(pd.get_dummies(df[c], prefix=c))
 
 
-    ffm_raw = pd.concat([data[['label', 'age']]]+all_cat_to_one_hot+
-                       [data[['hometown', 'residence', 'adID', 'camgaignID', 'advertiserID', 'appID','clickTime',
+    ffm_raw = pd.concat([df[['label', 'age']]]+all_cat_to_one_hot+
+                       [df[['hometown', 'residence', 'adID', 'camgaignID', 'advertiserID', 'appID','clickTime',
             'conversionTime']]], axis=1)
 
     ffm_raw.fillna(0, inplace=True  ) # TODO: confirm replacing nan with zero
