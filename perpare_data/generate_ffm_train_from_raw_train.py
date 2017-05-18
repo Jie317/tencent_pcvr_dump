@@ -12,6 +12,7 @@ d = 'D:/dataScience/pre/'
 
 
 def ffm_format(row):
+    # 注意每一列的数据不同之处
     str_ = '1' if int(row[0]) == 1 else '-1'
     for i, v in enumerate(row[1:]):
         # get rid of zero values 
@@ -26,7 +27,7 @@ loop = True
 chunkSize = 100000
 # chunkSize = 10000
 chunks = []
-reader = pd.read_csv('%sformatted_ffm_raw_train5.csv' % d, iterator=True)
+reader = pd.read_csv('%sformatted_ffm_raw_train6.csv' % d, iterator=True)
 # For ffm_raw is too big to deal with it, we choicn to spead it.
 i = 0
 while loop:
@@ -46,4 +47,4 @@ while loop:
 
 formatted = pd.concat(chunks, ignore_index=True)
 
-formatted.to_csv('%sformatted_train5.csv' % d, header=False, index=False)
+formatted.to_csv('%sformatted_train6.csv' % d, header=False, index=False)

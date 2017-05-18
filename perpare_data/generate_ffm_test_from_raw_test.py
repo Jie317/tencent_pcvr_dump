@@ -51,7 +51,7 @@ loop = True
 chunkSize = 100000
 # chunkSize = 10000
 chunks = []
-reader = pd.read_csv('%sformatted_ffm_raw_test5.csv' % d, iterator=True)
+reader = pd.read_csv('%sformatted_ffm_raw_test6.csv' % d, iterator=True)
 # For ffm_raw is too big to deal with it, we choicn to spead it.
 i = 0
 while loop:
@@ -71,4 +71,4 @@ while loop:
 
 formatted = pd.concat(chunks, ignore_index=True)
 
-formatted.to_csv('%sformatted_test5.csv' % d, header=False, index=False)
+formatted.to_csv('%sformatted_test6.csv' % d, header=False, index=False)
