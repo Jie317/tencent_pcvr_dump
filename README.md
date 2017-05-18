@@ -60,7 +60,7 @@ df3['1:3'] = (df11.iloc[:,0] == 23).astype(int)
 ```
 
 ## Key points from the online discussion (05.18)
-  1 Xgboost might works as well.
+  1 Xgboost might work as well.
   
   2 Most of the time should be focused on feature engineering.
   
