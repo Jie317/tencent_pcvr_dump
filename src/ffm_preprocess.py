@@ -5,7 +5,7 @@
 
 # 2 parameters for this script
 d = '../data/pre/' # data directory
-format_train = True # True for train, False for test
+format_train = False # True for train, False for test
 
 # output
 ffm_train_path = '%sffm_train' % d
