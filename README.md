@@ -57,20 +57,34 @@ df3['1:3'] = (df11.iloc[:,0] == 23).astype(int)
 
 # 讲每一行余下的数据，加上列表名做成Label:featur:values 的格式
 
-'''
+```
 
 ## Key points from the online discussion (05.18)
-- 1. Xgboost might works as well.
-- 2. Most of the time should be focused on feature engineering.
-- 3. Some rules may be applied, such as a user won't install again any app in his installed app list.
-- 4. How to deal with NANs in the data?
-- 5. Someone found similiar cvr in different age segmentations.
-- 6. Computation power (feasible with 8 cores and 16G RAM).
-- 7. Can we know the week day? This is important for the test data.
-- 8. Encoding IDs to vectors should work as well (a kaggle team won 2nd place before). 
-- 9. DNN works well just in research papers?
-- 10. How to deal with clickTime?
-- 11. FFM combines features itself, while it's better to add synthetic features.
-- 12. If undersampling is applied, log loss may need to be biased.
-- 13. Test data may not represent real values.
-- 14. ConversionTime is not too much important.
+  1 Xgboost might work as well.
+  
+  2 Most of the time should be focused on feature engineering.
+  
+  3 Some rules may be applied, such as a user won't install again any app in his installed app list.
+  
+  4 How to deal with NANs in the data?
+  
+  5 Someone found similiar cvr in different age segmentations.
+  
+  6 Computation power (feasible with 8 cores and 16G RAM).
+  
+  7 Can we know the week day? This is important for the test data.
+  
+  8 Encoding IDs to vectors should work as well (a kaggle team won 2nd place before).
+  
+  9 DNN works well just in research papers?
+  
+  10 How to deal with clickTime?
+  
+  11 FFM combines features itself, while it's better to add synthetic features.
+  
+  12 If undersampling is applied, log loss may need to be biased.
+  
+  13 Test data may not represent real values.
+  
+  14 ConversionTime is not too much important.
+  
