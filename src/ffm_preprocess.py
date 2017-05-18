@@ -44,7 +44,6 @@ all_cat_to_one_hot = []
 for c in cat_cols:
     all_cat_to_one_hot.append(pd.get_dummies(data[c], prefix=c))
 
-concat = pd.concat(all_cat_to_one_hot, axis=1)
 
 
 # In[6]:
@@ -52,7 +51,8 @@ concat = pd.concat(all_cat_to_one_hot, axis=1)
 ffm_raw = pd.concat([data[['label', 'age']]]+all_cat_to_one_hot+
                    [data[['hometown', 'residence', 'adID', 'camgaignID', 'advertiserID', 'appID','clickTime',
         'conversionTime']]], axis=1)
-del concat
+
+ffm_raw.fillna(0, inplace=True) # TODO: confirm replacing nan with zero
 
 
 # In[7]:
@@ -72,6 +72,8 @@ def ffm_format(row):
     
 formatted = ffm_raw.apply(ffm_format, axis=1)
 formatted.to_csv(ffm_train_path if format_train else ffm_test_path, header=False, index=False)
+
+
 print('Finished ffm input formatting')
         
 
