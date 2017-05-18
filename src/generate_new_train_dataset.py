@@ -5,7 +5,7 @@
 
 # 2 parameters for this script
 d = '../data/pre/' # data directory
-generate_train = False # True for train, False for test
+generate_train = True # True for train, False for test
 
 import os
 import pandas as pd
