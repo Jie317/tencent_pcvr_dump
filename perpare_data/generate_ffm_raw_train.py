@@ -39,5 +39,5 @@ ffm_raw = pd.concat([data[['label']]] + all_cat_to_one_hot +
 
 ffm_raw.fillna(0, inplace=True)
 
-ffm_raw.to_csv('%sformatted_ffm_raw_train5.csv' % d, )
+ffm_raw.to_csv('%sformatted_ffm_raw_train6.csv' % d,index = False )
 print('ffm_raw_train completed')
