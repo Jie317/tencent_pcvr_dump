@@ -9,6 +9,8 @@ def wtite_to_submission(p, outp):
 
     assert len(preds)==338489
 
+    tr = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
+    print('Train average: ', np.average(tr.values[ :, -1]))
     print('Preds average: ', np.average(preds))
     print('Preds std dev.: ', np.std(preds))
 
@@ -20,7 +22,8 @@ def wtite_to_submission(p, outp):
 
 
 ffm_results = '../results_from_ffm'
-wtite_to_submission(ffm_results, '../submission_%s.csv' % strftime('%m%d_%H%M'))
+outp = '%s_ffm_sub.csv' % strftime('%H%M_%m%d')
+wtite_to_submission(ffm_results, outp)
 # os.remove(ffm_results)
 
-print('Written to submission.csv')
+print('Written to ', outp)

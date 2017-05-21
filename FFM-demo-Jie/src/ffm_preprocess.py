@@ -16,9 +16,9 @@ from collections import Counter
 from time import time
 
 
-def format_ffm(df, outp):
+def format_ffm(df):
     cat_cols = ['gender', 'education', 'marriageStatus', 'haveBaby', 'appPlatform', 
-                'sitesetID', 'positionType', 'connectionType', 'telecomsOperator', 'weekDay']
+                'sitesetID', 'positionType', 'connectionType', 'telecomsOperator', 'weekDay', 'clickTime_h' ]
     all_cat_to_one_hot = []
 
     for c in cat_cols:
@@ -26,7 +26,7 @@ def format_ffm(df, outp):
 
 
     ffm_raw = pd.concat([df[['label', 'age']]]+all_cat_to_one_hot+
-                       [df[['hometown', 'residence', 'adID', 'camgaignID', 'advertiserID', 'appID','clickTime_d', 'clickTime_h', 'clickTime_m',]]], axis=1)
+                       [df[['hometown', 'residence', 'adID', 'camgaignID', 'advertiserID', 'appID', 'clickTime_m',]]], axis=1)
 
     ffm_raw.fillna(-1, inplace=True  ) # TODO: confirm replacing nan with zero
 
@@ -45,17 +45,29 @@ def format_ffm(df, outp):
         return str_
         
     formatted = ffm_raw.apply(raw_format, axis=1)
-    formatted.to_csv(outp, header=False, index=False)
 
+
+    return formatted
 
 
 tr = pd.read_csv('%snew_generated_train.csv' % d, index_col=0)
-format_ffm(tr, ffm_train_path)
 
 te = pd.read_csv('%snew_generated_test.csv' % d, index_col=0)
 te['label'] = -1
-format_ffm(te, ffm_test_path)
 
+tr_idx = len(tr.index)
+
+all_data = pd.concat([tr, te]) # to avoid cols conflictions between tr and te
+
+all_formatted = format_ffm(all_data)
+
+tr = all_formatted[: tr_idx, :]
+te = all_formatted[tr_idx:, :]
+
+assert len(tr.index) == tr_idx
+
+tr.to_csv(ffm_train_path, header=False, index=False)
+te.to_csv(ffm_test_path, header=False, index=False)
 
 print('Finished ffm input formatting')
         
