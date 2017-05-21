@@ -104,33 +104,27 @@ df3['1:3'] = (df11.iloc[:,0] == 23).astype(int)
   2 weekday_train_data.py 
     
     Input: new_generated_train/test.csv
-    
     Output: only_17_24_two_days_train.csv with the same columns in input
 
   3 offline_validation_datasets.py
     
     Input: new_generated_train.csv
-    
     Output:
-    
         (1) 17_to_23_train.csv which directly pop from the input.
         (2) 24_offline_validation.csv which pop from the input but set the label to `0` for the rows with `conversionTime_d` bigger than `24`
 
   4 add_two_lists_info.py
     
-    Input: new_generated_train/test.csv
-    
+    Input: new_generated_train/test.csv  
     Output: new_generated_with_two_lists_info_train/test.csv which aggregates potential statistic information from the two lists (user_installedapps.csv and user_app_actions.csv)
 
   5 rule_out_already_installed_users.py
     
-    Input: pre_submission.csv 
-  
+    Input: pre_submission.csv
     Output: submission.csv which manually set the pred to `0` for all the users who have already installed the app
 
   6 ensemble.py
   
     Input: a set of submission.csv
-    
     Output: submission.csv which average (or with weights) all the input csvs.
   
