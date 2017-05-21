@@ -17,8 +17,8 @@ from time import time
 
 
 def format_ffm(df, outp):
-    cat_cols = ['gender', 'education', 'marriageStatus', 'haveBaby',
-            'appPlatform', 'sitesetID', 'positionType', 'connectionType', 'telecomsOperator']
+    cat_cols = ['gender', 'education', 'marriageStatus', 'haveBaby', 'appPlatform', 
+                'sitesetID', 'positionType', 'connectionType', 'telecomsOperator', 'weekDay']
     all_cat_to_one_hot = []
 
     for c in cat_cols:

@@ -1,8 +1,8 @@
 echo "Start"
 date
-# python3 ffm_preprocess.py
+python3 ffm_preprocess.py
 
-./ffm-train -k 8 -t 10 -l 0.00003 -s 4 ../ffm_train ../trained_ffm_model 
+./ffm-train -k 8 -t 10 -l 0.00003 -s 8 ../ffm_train ../trained_ffm_model 
 
 
 echo "Predict"
