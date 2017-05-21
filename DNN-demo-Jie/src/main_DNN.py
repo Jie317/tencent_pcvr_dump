@@ -1,5 +1,6 @@
+print('\n >>>>>>>> Dev new stat222\n')
 import argparse
-trained_model_path = '../trained_models/dnn_last.h5'
+trained_model_path = '../trained_models/last_dnn.h5'
 parser = argparse.ArgumentParser(
     description='DNNs on Keras to predict conversion rate.')
 parser.add_argument('-et', type=str, default=None, 
@@ -14,6 +15,8 @@ parser.add_argument('-cw', type=int, default=1,
     help='class weight for class 1')
 parser.add_argument('-e', type=int, default=5,
     help='epochs')
+parser.add_argument('-s', action='store_true',
+    help='print model summary')
 parser.add_argument('-ct', action='store_true',
     help='continue training last model')
 
@@ -40,12 +43,13 @@ from keras import backend as K
 from keras.models import load_model, Sequential, Model
 from keras.utils import plot_model, to_categorical
 from keras.callbacks import TensorBoard
-from keras.layers import Dense, Embedding, LSTM, GRU, SimpleRNN
+from keras.layers import Dense, Embedding, LSTM, GRU, SimpleRNN, BatchNormalization
 from keras.layers import Dropout, Bidirectional, Flatten, Input
 from keras.layers.merge import Concatenate, Add, concatenate, add
 
 def save_preds(preds, p):
     assert len(preds)==338489
+    print('Train average: ', np.average(tr_y))
     print('Preds average: ', np.average(preds))
     print('Preds std dev.: ', np.std(preds))
     with open(p, 'w') as res:
@@ -59,6 +63,10 @@ tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
 te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
 
 
+tr_df = tr_df.drop('weekDay', axis=1)
+te_df = te_df.drop('weekDay', axis=1)
+
+
 
 
 
@@ -67,6 +75,7 @@ te = te_df.values
 input_length = len(tr[0])-1
 max_feature = tr.max()+1
 max_f_cols = tr_df.max().values[:-1]
+print('Train cols: ', tr_df.columns)
 print('Max feature:', max_feature)
 
 # 0.1 imbalanced learning strategies
@@ -106,7 +115,7 @@ if args.et and args.et != '0':
 if args.et or args.ct:
     model = load_model(trained_model_path)
     print('Loaded model: %s' % trained_model_path)
-    model.summary() 
+    if args.s: model.summary() 
 
 else:
     if args.rnn: # recurrent networks
@@ -124,6 +133,7 @@ else:
                 col_in = Input(shape=(1,))
                 col_out = Embedding(f, int(math.log10(f)*4))(col_in)
                 col_out = Flatten()(col_out)
+                col_out = BatchNormalization()(col_out) 
 
                 cols_in.append(col_in)
                 cols_out.append(col_out)
@@ -132,7 +142,7 @@ else:
             cols_concatenated = concatenate(cols_out)
             y = Dense(1024, activation='relu', 
                       kernel_regularizer='l1')(cols_concatenated)
-            y = Dropout(.15)(y)
+            y = Dropout(.3)(y)
             y = Dense(512, activation='relu')(y)
             y = Dense(1, activation='sigmoid')(y)  
             model = Model(cols_in, y)  
@@ -156,7 +166,7 @@ else:
 if not args.et:
     # 4 compile model
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-    model.summary() 
+    if args.s: model.summary() 
     print(strftime('%c'))
   #  plot_model(model, to_file='../meta/model.png', show_shapes=True)
 
@@ -170,7 +180,7 @@ if not args.et:
                   batch_size=batch_size, callbacks=[tbCallBack])
 
     if not args.ns: 
-        model.save('../trained_models/dnn_%s.h5' % strftime("%m%d%H%M%S"))
+        model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
         model.save(trained_model_path)
         print('Saved model')
 
@@ -182,5 +192,5 @@ if fined_embedding:
     te = [te[:, i:i+1] for i in range(len(te[0]))]
 
 predict_probas = np.ravel(model.predict(te, batch_size=4096))
-p = '../results_%s.csv' % (strftime('%m%d%H%M'), )
+p = '../%s_dnn_sub.csv' % (strftime('%H%M_%m%d'), )
 save_preds(predict_probas, p=p)
