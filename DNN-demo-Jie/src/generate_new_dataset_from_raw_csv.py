@@ -40,7 +40,7 @@ def generate_new_dataset(data, train=True):
 	    data['conversionTime'] = np.nan # TODO: alternative?
 
 	data['clickTime_d'] = data['clickTime'].map(lambda x: int(str(x)[0:2]))
-	data['weekDay'] = data['clickTime_d'].map(lambda x: x%7)
+	data['weekDay'] = data['clickTime_d'].map(lambda x: (x%7)+1)
 	data['clickTime_h'] = data['clickTime'].map(lambda x: int(str(x)[2:4]))
 	data['clickTime_m'] = data['clickTime'].map(lambda x: int(str(x)[4:6]))
 
