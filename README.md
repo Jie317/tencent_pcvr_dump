@@ -94,9 +94,7 @@ df3['1:3'] = (df11.iloc[:,0] == 23).astype(int)
   1 generate_new_data_from_raw_csv.py (finished)
   
     Input: all raw csv files excepts the two lists (installed_apps and install_actions)
-    
     Output: new_generated_train/test.csv with columns: 
-    
         ['userID', 'age', 'gender', 'education', 'marriageStatus', 'haveBaby',
         'hometown', 'residence', 'creativeID', 'adID', 'camgaignID',
         'advertiserID', 'appID', 'appPlatform', 'positionID', 'sitesetID',
