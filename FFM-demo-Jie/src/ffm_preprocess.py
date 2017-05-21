@@ -6,8 +6,8 @@
 d = '../data/pre/' # data directory
 
 # output
-ffm_train_path = '%sffm_train' % d
-ffm_test_path = '%sffm_test' % d
+ffm_train_path = '../ffm_train'
+ffm_test_path = '../ffm_test' 
 
 import os
 import pandas as pd
@@ -26,24 +26,25 @@ def format_ffm(df, outp):
 
 
     ffm_raw = pd.concat([df[['label', 'age']]]+all_cat_to_one_hot+
-                       [df[['hometown', 'residence', 'adID', 'camgaignID', 'advertiserID', 'appID','clickTime',
-            'conversionTime']]], axis=1)
+                       [df[['hometown', 'residence', 'adID', 'camgaignID', 'advertiserID', 'appID','clickTime_d', 'clickTime_h', 'clickTime_m',]]], axis=1)
 
-    ffm_raw.fillna(0, inplace=True  ) # TODO: confirm replacing nan with zero
+    ffm_raw.fillna(-1, inplace=True  ) # TODO: confirm replacing nan with zero
 
+
+    print(ffm_raw.columns)
 
     from collections import OrderedDict
     fields = tuple(list(OrderedDict.fromkeys(i.split('_')[0] for i in ffm_raw.columns))) # including 'label'
     features = ffm_raw.columns
 
 
-    def ffm_format(row):
+    def raw_format(row):
         str_ = '1' if int(row[0])==1 else '-1'
         for i,v in enumerate(row[1:]):
             str_ += '\t%d:%d:%s' % (fields.index(features[i+1].split('_')[0])-1, i, str(v))
         return str_
         
-    formatted = ffm_raw.apply(ffm_format, axis=1)
+    formatted = ffm_raw.apply(raw_format, axis=1)
     formatted.to_csv(outp, header=False, index=False)
 
 
