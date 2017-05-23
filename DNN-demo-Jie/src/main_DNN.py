@@ -1,4 +1,4 @@
-print('\n >>>>>>>> Dev new stat222\n')
+print('\n >>>>>>>> Dev new stat2892\n')
 import argparse
 trained_model_path = '../trained_models/last_dnn.h5'
 parser = argparse.ArgumentParser(
@@ -7,16 +7,16 @@ parser.add_argument('-et', type=str, default=None,
     help='evaluate trained model (the last run by default))')
 parser.add_argument('-ns', action='store_true', 
     help='don\'t save model in the end')
-parser.add_argument('-os', action='store_true',
-    help='oversampling')
-parser.add_argument('-us', action='store_true',
-    help='undersampling')
-parser.add_argument('-cw', type=int, default=1,
-    help='class weight for class 1')
 parser.add_argument('-e', type=int, default=5,
     help='epochs')
+parser.add_argument('-v', type=int, default=0,
+    help='verbose')
 parser.add_argument('-s', action='store_true',
     help='print model summary')
+parser.add_argument('-tdo', action='store_true',
+    help='two days only (17 and 24)')
+parser.add_argument('-olv', action='store_true',
+    help='use offline validation train and test datasets')
 parser.add_argument('-ct', action='store_true',
     help='continue training last model')
 
@@ -57,19 +57,40 @@ def save_preds(preds, p):
         for i,pr in enumerate(preds): res.write('%s,%.8f\n' % ((i+1), pr))
     print('\nWritten to result file: ', p)
 
-    
+
+
+'''
+       ['userID', 'age', 'gender', 'education', 'marriageStatus', 'haveBaby',
+        'hometown', 'residence', 'creativeID', 'adID', 'camgaignID',
+        'advertiserID', 'appID', 'appPlatform', 'positionID', 'sitesetID',
+        'positionType', 'weekDay', 'clickTime_d', 'clickTime_h', 'clickTime_m',
+        'connectionType', 'telecomsOperator', 'conversionTime_d', 'label']
+'''    
 # ========================= 1 Data preparation ========================= #
+
+
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
 te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
 
 
-tr_df = tr_df.drop('weekDay', axis=1)
-te_df = te_df.drop('weekDay', axis=1)
+# tr_df = tr_df.drop(['userID', 'creativeID', 'positionID'], axis=1)
+# te_df = te_df.drop(['userID', 'creativeID', 'positionID'], axis=1)
+
+if args.tdo:
+    print('17, 24 -> 31')
+    tr_df = tr_df.loc[(tr_df['clickTime_d'] == 17) | (tr_df['clickTime_d'] == 24)]
+
+if args.olv:
+    print('Using offline validation: 16-23 -> 24 (val)')
+    va_df = tr_df.loc[(tr_df['clickTime_d'] == 24)]
+    va_df
+    tr_df = tr_df.loc[(tr_df['clickTime_d'] > 16) & (tr_df['clickTime_d'] < 23)]
 
 
 
 
-
+tr_df = tr_df.drop('conversionTime_d', axis=1)
+te_df = te_df.drop('conversionTime_d', axis=1)
 tr = tr_df.values
 te = te_df.values
 input_length = len(tr[0])-1
@@ -77,12 +98,6 @@ max_feature = tr.max()+1
 max_f_cols = tr_df.max().values[:-1]
 print('Train cols: ', tr_df.columns)
 print('Max feature:', max_feature)
-
-# 0.1 imbalanced learning strategies
-class_weight = {0: 1, 1: args.cw}
-imb = None
-if args.os: imb = 'os'
-if args.us: imb = 'us'
 
 tr_x, tr_y = tr[:, :-1], tr[:, -1:]
 
@@ -127,22 +142,24 @@ else:
 
     if args.mlp: # multilayer perceptrons
         if fined_embedding:
+            print('Using fine-grained embedding layers')
             cols_in = []
             cols_out = []
-            for f in max_f_cols:
+            f = lambda x: int((math.log10(x)+1)*3)
+            print([f(fe) for fe in max_f_cols])
+            for fe in max_f_cols:
                 col_in = Input(shape=(1,))
-                col_out = Embedding(f, int(math.log10(f)*4))(col_in)
+                col_out = Embedding(fe, f(fe))(col_in)
                 col_out = Flatten()(col_out)
                 col_out = BatchNormalization()(col_out) 
 
                 cols_in.append(col_in)
                 cols_out.append(col_out)
 
-
             cols_concatenated = concatenate(cols_out)
             y = Dense(1024, activation='relu', 
                       kernel_regularizer='l1')(cols_concatenated)
-            y = Dropout(.3)(y)
+            # y = Dropout(.3)(y)
             y = Dense(512, activation='relu')(y)
             y = Dense(1, activation='sigmoid')(y)  
             model = Model(cols_in, y)  
@@ -173,10 +190,10 @@ if not args.et:
     # 5 fit the model (training)
     if fined_embedding:
         tr_cols = [tr_x[:, i:i+1] for i in range(len(tr_x[0]))]
-        model.fit(tr_cols, tr_y, epochs=args.e, shuffle=True, 
+        model.fit(tr_cols, tr_y, epochs=args.e, shuffle=True, verbose=args.v,
                   batch_size=batch_size, callbacks=[tbCallBack])
     else:
-        model.fit(tr_x, tr_y, epochs=args.e, shuffle=True, 
+        model.fit(tr_x, tr_y, epochs=args.e, shuffle=True, verbose=args.v,
                   batch_size=batch_size, callbacks=[tbCallBack])
 
     if not args.ns: 
@@ -191,6 +208,6 @@ print('\nPrediction')
 if fined_embedding:
     te = [te[:, i:i+1] for i in range(len(te[0]))]
 
-predict_probas = np.ravel(model.predict(te, batch_size=4096))
+predict_probas = np.ravel(model.predict(te, batch_size=4096, verbose=args.v))
 p = '../%s_dnn_sub.csv' % (strftime('%H%M_%m%d'), )
 save_preds(predict_probas, p=p)
