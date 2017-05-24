@@ -1,4 +1,11 @@
- python3 main_DNN.py -mlp -e 5 -v 1 -nfe  -f 9 -olv -et 0 -vd 27
- python3 main_DNN.py -mlp -e 5 -v 1 -nfe  -f 9 -olv -et 0 -vd 26
- python3 main_DNN.py -mlp -e 5 -v 1 -nfe  -f 9 -olv -et 0 -vd 25
- python3 main_DNN.py -mlp -e 5 -v 1 -nfe  -f 9 -olv -et 0 -vd 24
+
+
+python3 main_DNN.pyp main_DNN.py -mlp -e 50 -v 2 -f 20 -s | tee log_ag_run
+
+git add .
+git commit -m 'finished run'
+git pull
+git push -f
+
+sudo shutdown -a 0 
+
