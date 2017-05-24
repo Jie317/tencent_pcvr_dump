@@ -7,6 +7,8 @@ parser.add_argument('-et', type=str, default=None,
     help='evaluate trained model (the last run by default))')
 parser.add_argument('-ns', action='store_true', 
     help='don\'t save model in the end')
+parser.add_argument('-of', action='store_true', 
+    help='use only one feature')
 parser.add_argument('-nm', action='store_true', 
     help='not mask future information')
 parser.add_argument('-e', type=int, default=5,
@@ -21,8 +23,11 @@ parser.add_argument('-s', action='store_true',
     help='print model summary')
 parser.add_argument('-nfe', action='store_true',
     help='not use fine-grained embedding layers')
+parser.add_argument('-ct', action='store_true',
+    help='continue training last model')
 
-g = parser.add_mutually_exclusive_group(required=True)
+
+g = parser.add_mutually_exclusive_group(required=False)
 g.add_argument('-tdo', action='store_true',
     help='two days only (17 and 24)')
 g.add_argument('-rml', action='store_true',
@@ -30,12 +35,10 @@ g.add_argument('-rml', action='store_true',
 g.add_argument('-olv', action='store_true',
     help='use offline validation train and test datasets')
 
-g.add_argument('-ct', action='store_true',
-    help='continue training last model')
 
 group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument('-lr', action='store_true',
-    help='logistic regression')
+group.add_argument('-elr', action='store_true',
+    help='logistic regression after embedding')
 group.add_argument('-mlp', action='store_true',
     help='multilayer perceptrons')
 group.add_argument('-rnn', action='store_true',
@@ -90,46 +93,52 @@ features = ['positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
             'marriageStatus', 'appPlatform', 'clickTime_m'][:args.f]
 
+
+if args.of: 
+    features = features[-1: ]
+features.append('label')
+
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
 te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
 va_df = pd.DataFrame(None)
 
 
 if args.rml:
-    tr_df = tr_df.drop(tr_df.clickTime_d == 30)
+    print('--- Dropping day 30: ', len(tr_df[tr_df.clickTime_d == 30]))
+    tr_df = tr_df[tr_df.clickTime_d != 30]
 
 if args.tdo:
-    print('--- , 24 -> 31')
+    print('--- 17, 24 -> 31')
     tr_df = tr_df.loc[(tr_df['clickTime_d'] == 17) | (tr_df['clickTime_d'] == 24)]
 
 if args.olv:
     pred_day = args.vd
-    print('--- using offline validation like: 16-23 -> 24 (val)')
+    print('--- Using offline validation like: 16-23 -> 24 (val)')
     va_df = tr_df.loc[tr_df['clickTime_d'] == pred_day]
     tr_df = tr_df.loc[(tr_df['clickTime_d'] >= 17) & (tr_df['clickTime_d'] <= 23)]
     if not args.nm:
-        print("--- sked ", np.sum(tr_df.loc[tr_df['conversionTime_d'] 
+        print("--- Masked ", np.sum(tr_df.loc[tr_df['conversionTime_d'] 
             >= pred_day, 'label'])/(np.sum(tr_df.loc[tr_df['clickTime_d'] == pred_day-1, 'label'])+1e-5))
         tr_df.loc[tr_df['conversionTime_d'] >= pred_day, 'label'] = 0
     va_df = va_df[features]
     va = va_df.values
-    print('--- lidation length (24):', len(va_df))
+    print('--- Validation day:', args.vd, len(va_df))
     va_x, va_y = va[:, :-1], va[:, -1:]
 
 
 
-features.append('label')
 tr_df = tr_df[features]
 te_df = te_df[features[:-1]]
 tr = tr_df.values
 te = te_df.values
+np.random.shuffle(tr)
 input_length = len(tr[0])-1
-max_feature = tr.max()+1
-max_f_cols = tr_df.max().values[:-1]
+max_feature = max(tr.max(), va.max() if args.olv else 0, te.max())+1
+max_f_cols = tr_df.max().values[:-1]+1
 print('--- Train cols: ', tr_df.columns)
-print('--- x feature:', max_feature)
-print('--- x column features:', max_f_cols)
-print('--- lected most important features:', args.f)
+print('--- Max feature:', max_feature)
+print('--- Max column features:', max_f_cols)
+print('--- Selected most important features:', args.f)
 
 tr_x, tr_y = tr[:, :-1], tr[:, -1:]
 
@@ -149,7 +158,7 @@ fined_embedding = not args.nfe
 # 0.2 parameter instantiations
 tbCallBack = TensorBoard(log_dir='../meta/tbGraph/', histogram_freq=1,
              write_graph=True, write_images=True)
-checkpoint = ModelCheckpoint('../trained_models/{epoch:02d}-{val_loss:.2f}.h5', monitor='val_loss', 
+checkpoint = ModelCheckpoint('../trained_models/{epoch:02d}-{val_loss:.4f}.h5', monitor='val_loss', 
              verbose=1, save_best_only=True, period=1)
 
 
@@ -208,10 +217,12 @@ else:
             model.add(Dense(512, activation='relu'))
             model.add(Dense(1, activation='sigmoid')) 
 
-    if args.lr: # logistic regression
+    if args.elr: # logistic regression after embedding
         model = Sequential()
         model.add(Embedding(max_feature, 16, input_length = input_length))
         model.add(Flatten())
+        model.add(Dense(64, activation='relu'))
+
         model.add(Dense(1, activation='sigmoid')) 
 
         
@@ -223,20 +234,24 @@ if not args.et:
   #  plot_model(model, to_file='../meta/model.png', show_shapes=True)
 
     if args.olv: 
-        va_x = s_c(va_x)
+        if fined_embedding: 
+            va_x = s_c(va_x)
+        callbacks = [checkpoint]
+        vali_data = (va_x, va_y)
     else: 
         checkpoint = None
+        vali_data = None
 
     # 5 fit the model (training)
     if fined_embedding:
         tr_cols = s_c(tr_x)
-        model.fit(tr_cols, tr_y, epochs=args.e, validation_data=(va_x, va_y) if args.olv else None, 
+        model.fit(tr_cols, tr_y, epochs=args.e, validation_data=vali_data, 
             shuffle=True, verbose=args.v,
-            batch_size=batch_size, callbacks=[])
+            batch_size=batch_size, callbacks=callbacks)
     else:
-        model.fit(tr_x, tr_y, epochs=args.e, validation_data=(va_x, va_y) if args.olv else None, 
+        model.fit(tr_x, tr_y, epochs=args.e, validation_data=vali_data, 
             shuffle=True, verbose=args.v,
-            batch_size=batch_size, callbacks=[])
+            batch_size=batch_size, callbacks=callbacks)
 
     if not args.ns: 
         model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
