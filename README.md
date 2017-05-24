@@ -101,12 +101,12 @@ df3['1:3'] = (df11.iloc[:,0] == 23).astype(int)
         'positionType', 'weekDay', 'clickTime_d', 'clickTime_h', 'clickTime_m',
         'connectionType', 'telecomsOperator', 'conversionTime_d', 'label']
 
-  2 weekday_train_data.py 
+  2 weekday_train_data.py (finished)
     
     Input: new_generated_train/test.csv
     Output: only_17_24_two_days_train.csv with the same columns in input
 
-  3 offline_validation_datasets.py
+  3 offline_validation_datasets.py (finished)
     
     Input: new_generated_train.csv
     Output:
