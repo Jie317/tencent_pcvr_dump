@@ -97,14 +97,11 @@ features = ['positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m']
-features = ['userID'] + features
-features = features[:args.f]
+            'marriageStatus', 'appPlatform', 'clickTime_m'][:args.f]
 
 
 if args.of: 
     features = features[-1: ]
-features.append('label')
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
 te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
@@ -120,16 +117,16 @@ if args.tdo:
     tr_df = tr_df.loc[(tr_df['clickTime_d'] == 17) | (tr_df['clickTime_d'] == 24)]
 
 if args.olv:
-    print('--- Using offline validation like: 16-23 -> 24 (val)')
+    print('--- Using offline validation like: 17-23 -> 24 (val)')
     tr_df = tr_df.loc[(tr_df['clickTime_d'] >= 17) & (tr_df['clickTime_d'] <= 23)]
     if not args.nm:
         print("--- Masked ", np.sum(tr_df.loc[tr_df['conversionTime_d'] 
             >= args.vd, 'label'])/(np.sum(tr_df.loc[tr_df['clickTime_d'] == args.vd-1, 'label'])+1e-5))
         tr_df.loc[tr_df['conversionTime_d'] >= args.vd, 'label'] = 0
 
-tr_df = tr_df[features]
-va_df = va_df[features]
-te_df = te_df[features[:-1]]
+tr_df = tr_df[features+['label']]
+va_df = va_df[features+['label']]
+te_df = te_df[features]
 
 tr = tr_df.values
 va = va_df.values
