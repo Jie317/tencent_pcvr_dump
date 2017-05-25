@@ -91,7 +91,9 @@ features = ['positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m'][:args.f]
+            'marriageStatus', 'appPlatform', 'clickTime_m']
+features = ['userID'] + features
+features = features[:args.f]
 
 
 if args.of: 
