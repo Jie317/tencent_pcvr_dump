@@ -143,6 +143,9 @@ if args.r:
 		f_emb_models.append(f_model)
 		f_model.save(filepath)
 
+
+else:
+	
 	print('\nFinished feature embedding training')
 
 	assert_w_before = f_emb_models[5].get_weights()
