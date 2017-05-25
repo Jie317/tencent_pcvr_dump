@@ -15,7 +15,7 @@ parser.add_argument('-e', type=int, default=5,
     help='epochs')
 parser.add_argument('-f', type=int, default=9,
     help='the f most important independent features (<=22)')
-parser.add_argument('-v', type=int, default=0,
+parser.add_argument('-v', type=int, default=1,
     help='verbose')
 parser.add_argument('-vd', type=int, default=24,
     help='which day for validation')
@@ -25,6 +25,8 @@ parser.add_argument('-nfe', action='store_true',
     help='not use fine-grained embedding layers')
 parser.add_argument('-ct', action='store_true',
     help='continue training last model')
+parser.add_argument('-m', type=str, required=True,
+    help='leave a message')
 
 
 g = parser.add_mutually_exclusive_group(required=False)
@@ -66,11 +68,16 @@ from keras.layers.merge import Concatenate, Add, concatenate, add
 def s_c(x):
     return [x[:, i:i+1] for i in range(len(x[0]))]
 
-def save_preds(preds, p):
+def save_preds(preds):
     assert len(preds)==338489
     print('\nTrain average: ', np.average(tr_y))
-    print('Preds average: ', np.average(preds))
-    print('Preds std dev.: ', np.std(preds))
+    avg = np.average(preds)
+    std = np.std(preds)
+    print('Preds average: ', avg)
+    print('Preds std dev.: ', std)
+
+    p = '../%s_dnn_sub_%.4f_%.4f_%s.csv' % (strftime('%H%M_%m%d'), avg, std, args.m)
+
     with open(p, 'w') as res:
         res.write('instanceID,prob\n')
         for i,pr in enumerate(preds): res.write('%s,%.8f\n' % ((i+1), pr))
@@ -86,7 +93,6 @@ def save_preds(preds, p):
         'connectionType', 'telecomsOperator', 'conversionTime_d', 'label']
 '''    
 # ========================= 1 Data preparation ========================= #
-
 features = ['positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
@@ -102,7 +108,7 @@ features.append('label')
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
 te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
-va_df = pd.DataFrame(None)
+va_df = tr_df.loc[tr_df['clickTime_d'] == args.vd]
 
 
 if args.rml:
@@ -114,35 +120,34 @@ if args.tdo:
     tr_df = tr_df.loc[(tr_df['clickTime_d'] == 17) | (tr_df['clickTime_d'] == 24)]
 
 if args.olv:
-    pred_day = args.vd
     print('--- Using offline validation like: 16-23 -> 24 (val)')
-    va_df = tr_df.loc[tr_df['clickTime_d'] == pred_day]
     tr_df = tr_df.loc[(tr_df['clickTime_d'] >= 17) & (tr_df['clickTime_d'] <= 23)]
     if not args.nm:
         print("--- Masked ", np.sum(tr_df.loc[tr_df['conversionTime_d'] 
-            >= pred_day, 'label'])/(np.sum(tr_df.loc[tr_df['clickTime_d'] == pred_day-1, 'label'])+1e-5))
-        tr_df.loc[tr_df['conversionTime_d'] >= pred_day, 'label'] = 0
-    va_df = va_df[features]
-    va = va_df.values
-    print('--- Validation day:', args.vd, len(va_df))
-    va_x, va_y = va[:, :-1], va[:, -1:]
-
-
+            >= args.vd, 'label'])/(np.sum(tr_df.loc[tr_df['clickTime_d'] == args.vd-1, 'label'])+1e-5))
+        tr_df.loc[tr_df['conversionTime_d'] >= args.vd, 'label'] = 0
 
 tr_df = tr_df[features]
+va_df = va_df[features]
 te_df = te_df[features[:-1]]
+
 tr = tr_df.values
+va = va_df.values
 te = te_df.values
 np.random.shuffle(tr)
 input_length = len(tr[0])-1
 max_feature = max(tr.max(), va.max() if args.olv else 0, te.max())+1
 max_f_cols = tr_df.max().values[:-1]+1
 print('--- Train cols: ', tr_df.columns)
+print('--- Validation day:', args.vd, len(va_df))
 print('--- Max feature:', max_feature)
 print('--- Max column features:', max_f_cols)
 print('--- Selected most important features:', args.f)
 
 tr_x, tr_y = tr[:, :-1], tr[:, -1:]
+va_x, va_y = va[:, :-1], va[:, -1:]
+if not args.nfe:
+    va_x = s_c(va_x)
 
 
 # ====================== 2 Build model and training ==================== #
@@ -155,7 +160,6 @@ metrics = ['binary_crossentropy'] # can't be empty in this script
 
 batch_size = 4096
 workers = 1
-fined_embedding = not args.nfe
 
 # 0.2 parameter instantiations
 tbCallBack = TensorBoard(log_dir='../meta/tbGraph/', histogram_freq=1,
@@ -186,7 +190,7 @@ else:
         model.add(Dense(1, activation='sigmoid')) 
 
     if args.mlp: # multilayer perceptrons
-        if fined_embedding:
+        if not args.nfe:
             print('Using fine-grained embedding layers')
             cols_in = []
             cols_out = []
@@ -235,25 +239,12 @@ if not args.et:
     print('\n', strftime('%c'))
   #  plot_model(model, to_file='../meta/model.png', show_shapes=True)
 
-    if args.olv: 
-        if fined_embedding: 
-            va_x = s_c(va_x)
-        callbacks = [checkpoint]
-        vali_data = (va_x, va_y)
-    else: 
-        checkpoint = None
-        vali_data = None
-
     # 5 fit the model (training)
-    if fined_embedding:
-        tr_cols = s_c(tr_x)
-        model.fit(tr_cols, tr_y, epochs=args.e, validation_data=vali_data, 
-            shuffle=True, verbose=args.v,
-            batch_size=batch_size, callbacks=callbacks)
-    else:
-        model.fit(tr_x, tr_y, epochs=args.e, validation_data=vali_data, 
-            shuffle=True, verbose=args.v,
-            batch_size=batch_size, callbacks=callbacks)
+    if not args.nfe:
+        tr_x = s_c(tr_x)
+    model.fit(tr_x, tr_y, epochs=args.e, validation_data=(va_x, va_y), 
+        shuffle=True, verbose=args.v,
+        batch_size=batch_size, callbacks=[checkpoint, tbCallBack])
 
     if not args.ns: 
         model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
@@ -277,9 +268,8 @@ if args.olv:
 
 # 7 calculate predictions
 print('\nPrediction')
-if fined_embedding:
+if not args.nfe:
     te = s_c(te)
 
 predict_probas = np.ravel(model.predict(te, batch_size=4096*2, verbose=args.v))
-p = '../%s_dnn_sub.csv' % (strftime('%H%M_%m%d'), )
-save_preds(predict_probas, p=p)
+save_preds(predict_probas)
