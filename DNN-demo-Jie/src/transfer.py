@@ -91,11 +91,11 @@ class predCallback(Callback):
 # ====================================================================================== #
 # ====================================================================================== #
 # data
-features = ['userID', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
+features = ['positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m']
+            'marriageStatus', 'appPlatform', 'clickTime_m'] #'userID'
 features.reverse()
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
@@ -178,8 +178,8 @@ else:
             checkpoint = ModelCheckpoint('../trained_models/tl_%d_{epoch:02d}_{val_loss:.4f}.h5'%i, 
                         monitor='val_loss', verbose=1, save_best_only=True, period=1)
 
-            f_model.fit(tr_x[i], tr_y, epochs=3, validation_data=(va_x[i], va_y), 
-                shuffle=True, verbose=2, batch_size=4096, callbacks=[checkpoint])
+            f_model.fit(tr_x[i], tr_y, epochs=1, validation_data=(va_x[i], va_y), 
+                shuffle=True, verbose=2, batch_size=1024, callbacks=[checkpoint])
 
             f_model.save('../trained_models/f_emb_model_%d'%i)
             print('\n--- %d %s Evaluation on day '%(i,f), 24)
@@ -209,13 +209,13 @@ else:
         y = Dense(1, activation='sigmoid')(y)
     if args.mlp:
         y = concatenate(y)
-        y = Dense(1024, activation='relu', kernel_regularizer='l1')(y)
+        y = Dense(64, activation='relu', kernel_regularizer='l1')(y)
         y = Dropout(.1)(y)
-        y = Dense(512, activation='relu')(y)
+        y = Dense(32, activation='relu')(y)
         y = Dense(1, activation='sigmoid')(y)
     if args.elr:
         y = concatenate(y)
-        y = Dropout(.5)(y)
+        # y = Dropout(.5)(y)
         y = Dense(1, activation='sigmoid', kernel_regularizer='l1')(y)
 
 
