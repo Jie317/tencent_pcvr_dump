@@ -63,12 +63,13 @@ def save_preds(preds, cb=False):
         res.write('instanceID,prob\n')
         for i,pr in enumerate(preds): res.write('%s,%.8f\n' % ((i+1), pr))
     if cb: 
+        print(' Written to: ', p)
         return avg, std
     else:
         print('\nTrain average: ', tr_avg)
         print('Preds average: ', avg)
         print('Preds std dev.: ', std)
-        print('\nWritten to result file: ', p)
+        print('\nWritten to: ', p)
 
 def s_c(x):
     return [x[:, i:i+1] for i in range(len(x[0]))]
