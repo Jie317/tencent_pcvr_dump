@@ -91,11 +91,16 @@ class predCallback(Callback):
 # ====================================================================================== #
 # ====================================================================================== #
 # data
-features = ['positionID', 'positionType', 'creativeID', 'appID', 'adID',
+# features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
+#             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
+#             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
+#             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
+#             'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
+
+features = ['appCategory', 'positionType', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
-            'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
-            'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m'] #'userID'
+            'residence', 'age', 'haveBaby', 'telecomsOperator',
+            'gender', 'education', 'clickTime_h', 'weekDay']
 features.reverse()
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
@@ -158,8 +163,6 @@ else:
         f_emb_models = []
         inps = [Input(shape=(1,), name='inp_%d'%i) for i in range(len(features))]
         for i,f in enumerate(features):
-            print('\nStarting feature embedding traing for feature: ', i, f)
-
             y = Embedding(max_f_cols[i], 16, name='emb_%d'%i)(inps[i])
             y = Flatten(name='fla_%d'%i)(y)
             y = BatchNormalization()(y)
@@ -167,22 +170,20 @@ else:
             y = Dense(1, activation='sigmoid', name='y_%d'%i)(y)
             f_model = Model(inps[i], y)
 
-            print('\n--- Max feature:', max_f_cols[i])
+            print('\n--- Train feature', f, 'Max feature:', max_f_cols[i])
             # f_model.summary()
-            print([l.name for l in f_model.layers])
 
             f_model.compile('rmsprop', 'binary_crossentropy')
 
             checkpoint = ModelCheckpoint('../trained_models/tl_%d_{epoch:02d}_{val_loss:.4f}.h5'%i, 
                         monitor='val_loss', verbose=1, save_best_only=True, period=1)
 
-            f_model.fit(tr_x[i], tr_y, epochs=1, validation_data=(va_x[i], va_y), 
-                shuffle=True, verbose=2, batch_size=1024, callbacks=[checkpoint])
+            f_model.fit(tr_x[i], tr_y, epochs=2, validation_data=(va_x[i], va_y), 
+                shuffle=True, verbose=2, batch_size=1024*4, callbacks=[checkpoint])
 
             f_model.save('../trained_models/f_emb_model_%d'%i)
-            print('\n--- %d %s Evaluation on day '%(i,f), 24)
-            scores = f_model.evaluate(va_x[i], va_y, batch_size=8196, verbose=1)
-            print('--- %d %s Evaluation scores: '%(i,f), scores)
+            scores = f_model.evaluate(va_x[i], va_y, batch_size=1024*8, verbose=1)
+            print('\n--- %d %s Evaluation scores: '%(i,f), scores)
 
             for l in f_model.layers: l.trainable = False
             f_emb_models.append(f_model)
