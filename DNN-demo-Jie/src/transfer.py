@@ -11,6 +11,8 @@ parser.add_argument('-ct', action='store_true',
     help='continue training last model')
 parser.add_argument('-s', action='store_true',
     help='print model summary')
+parser.add_argument('-ptd', action='store_true',
+    help='part of train data in feature embedding training')
 parser.add_argument('-m', type=str, required=True, default='no_mess',
     help='leave a message')
 parser.add_argument('-et', type=str, default=None, 
@@ -87,7 +89,33 @@ class predCallback(Callback):
         avg, std = save_preds(predict_probas, cb=True)
         print('\nTr avg: %.4f, avg: %.4f, std: %.4f\n'%(tr_avg, avg, std))
 
-
+'''
+OrderedDict([('conversionTime_d', 0.25819888974716115),
+             ('userID', 0.16155678776166404),
+             ('appCategory', 0.11342039643011995),
+             ('positionID', 0.097800108293958354),
+             ('positionType', 0.087460470534174911),
+             ('creativeID', 0.071309827665513831),
+             ('appID', 0.06958037043067912),
+             ('adID', 0.063169867995414214),
+             ('advertiserID', 0.05492409862736055),
+             ('camgaignID', 0.050796291439061121),
+             ('sitesetID', 0.013700972348893198),
+             ('connectionType', 0.010308483261562163),
+             ('residence', 0.0075065408905755091),
+             ('age', 0.006662250035074235),
+             ('hometown', 0.0057415423374340075),
+             ('haveBaby', 0.0050835138043705281),
+             ('telecomsOperator', 0.0049696062876111837),
+             ('gender', 0.0046607920728349225),
+             ('education', 0.0030160253068509456),
+             ('clickTime_h', 0.0029165451700999038),
+             ('clickTime_d', 0.0028077837477102278),
+             ('weekDay', 0.001772181032721335),
+             ('marriageStatus', 0.0016869540469555094),
+             ('appPlatform', 0.0008981783007564663),
+             ('clickTime_m', 0.00072661907607473827)])
+'''
 # ====================================================================================== #
 # ====================================================================================== #
 # data
@@ -178,8 +206,14 @@ else:
             checkpoint = ModelCheckpoint('../trained_models/tl_%d_{epoch:02d}_{val_loss:.4f}.h5'%i, 
                         monitor='val_loss', verbose=1, save_best_only=True, period=1)
 
-            f_model.fit(tr_x[i], tr_y, epochs=2, validation_data=(va_x[i], va_y), 
-                shuffle=True, verbose=2, batch_size=1024*4, callbacks=[checkpoint])
+            if args.ptd:
+                f_model.fit(
+                    np.array_split(tr_x[i], len(features))[i], 
+                    np.array_split(tr_y, len(features))[i], epochs=10, validation_data=(va_x[i], va_y), 
+                    shuffle=True, verbose=2, batch_size=1024*4, callbacks=[checkpoint])
+            else:
+                f_model.fit(tr_x[i], tr_y, epochs=2, validation_data=(va_x[i], va_y), 
+                    shuffle=True, verbose=2, batch_size=1024*4, callbacks=[checkpoint])
 
             f_model.save('../trained_models/f_emb_model_%d'%i)
             scores = f_model.evaluate(va_x[i], va_y, batch_size=1024*8, verbose=1)
