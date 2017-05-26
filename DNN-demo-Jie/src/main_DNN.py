@@ -34,6 +34,8 @@ g.add_argument('-tdo', action='store_true',
     help='two days only (17 and 24)')
 g.add_argument('-rml', action='store_true',
     help='remove day 30')
+g.add_argument('-fra', action='store_true',
+    help='take fraction of data')
 g.add_argument('-olv', action='store_true',
     help='use offline validation train and test datasets')
 
@@ -93,12 +95,11 @@ def save_preds(preds):
         'connectionType', 'telecomsOperator', 'conversionTime_d', 'label']
 '''    
 # ========================= 1 Data preparation ========================= #
-features = ['positionID', 'positionType', 'creativeID', 'appID', 'adID',
+features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m']
-features = ['userID'] + features
+            'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
 features = features[:args.f]
 
 
@@ -110,6 +111,10 @@ tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
 te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
 va_df = tr_df.loc[tr_df['clickTime_d'] == args.vd]
 
+
+if args.fra:
+    tr_df = tr_df.sample(frac=.1)
+    print('--- Sample to ', len(tr_df.index))
 
 if args.rml:
     print('--- Dropping day 30: ', len(tr_df[tr_df.clickTime_d == 30]))
@@ -162,7 +167,7 @@ batch_size = 4096
 workers = 1
 
 # 0.2 parameter instantiations
-tbCallBack = TensorBoard(log_dir='../meta/tbGraph/', histogram_freq=1,
+tbCallBack = TensorBoard(log_dir='../meta/tbGraph/', histogram_freq=0,
              write_graph=True, write_images=True)
 checkpoint = ModelCheckpoint('../trained_models/{epoch:02d}-{val_loss:.4f}.h5', monitor='val_loss', 
              verbose=1, save_best_only=True, period=1)

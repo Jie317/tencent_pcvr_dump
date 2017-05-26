@@ -61,11 +61,11 @@ def s_c(x):
 # ====================================================================================== #
 # ====================================================================================== #
 
-features = ['userID', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
+features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m']
+            'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
 
 # features = ['positionID', 'positionType']
 
@@ -131,8 +131,8 @@ if args.r:
 
 		f_model.compile('rmsprop', 'binary_crossentropy')
 
-		f_model.fit(tr_x[i], tr_y, epochs=7, validation_data=(va_x[i], va_y), 
-			shuffle=True, verbose=2, batch_size=4096, callbacks=[checkpoint])
+		f_model.fit(tr_x[i], tr_y, epochs=2, validation_data=(va_x[i], va_y), 
+			shuffle=True, verbose=2, batch_size=512, callbacks=[checkpoint])
 
 		f_model.save('../trained_models/f_emb_model_%d'%i)
 		print('--- %d %s Evaluation on day '%(i,f), 24)
