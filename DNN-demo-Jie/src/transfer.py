@@ -133,7 +133,7 @@ tr_x = s_c(tr_x)
 va_x = s_c(va_x)
 te = s_c(te)
 tr_avg = np.average(tr_y)
-max_f_cols = tr_df.max().values[:-1]+1
+max_f_cols = pd.concat([tr_df[features], te_df]).max().values+1
 print(tr_df.columns.values, '\n', max_f_cols)
 
 # ====================================================================================== #
@@ -141,8 +141,6 @@ print(tr_df.columns.values, '\n', max_f_cols)
 trained_model_path = '../trained_models/last_tl_dnn.h5'
 f_model_paths = ['../trained_models/f_model_%d.h5'%i for i in range(len(features))]
 
-tbCallBack = TensorBoard(log_dir='../meta/tbGraph/', histogram_freq=1,
-            write_graph=True, write_images=True)
 checkpoint_all = ModelCheckpoint('../trained_models/tl_all_{epoch:02d}_{val_loss:.4f}.h5', 
             monitor='val_loss', verbose=1, save_best_only=True, period=1)
 
