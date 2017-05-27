@@ -46,8 +46,8 @@ import json
 import numpy as np
 import pandas as pd
 from time import time, strftime
-from sklearn.metrics import precision_recall_fscore_support
-print(' >>>>>>>>> Devv stat 15777 >>>>>>>>>>>> ')
+from sklearn.metrics import classification_report
+print(' >>>>>>>>> Devv stat 1577799 >>>>>>>>>>>> ')
 
 def save_preds(preds, cb=False):
     preds = np.ravel(preds)
@@ -101,16 +101,15 @@ OrderedDict([('conversionTime_d', 0.25819888974716115),
 # ====================================================================================== #
 # ====================================================================================== #
 # data
-#   features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
-#             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
-#             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
-#             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-#             'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
-
-features = ['appCategory', 'positionType', 'adID',
+features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
-            'residence', 'age', 'haveBaby', 'telecomsOperator',
-            'gender', 'education', 'clickTime_h', 'weekDay']
+            'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
+            'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
+            'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
+
+# features = ['connectionType', 'telecomsOperator', 'appPlatform', 'gender',
+#        'education', 'marriageStatus', 'haveBaby', 'sitesetID', 'positionType',
+#        'weekDay']
 features.reverse()
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
@@ -296,19 +295,20 @@ if args.xgb:
     tr_y = np.ravel(tr_y)
     gbm = xgb.XGBClassifier(max_depth=6, max_delta_step=1, silent=False, n_estimators=500, 
                             learning_rate=0.2, objective='binary:logistic', 
-                            min_child_weight = 1, scale_pos_weight = 1,  
+                            # min_child_weight = 1, scale_pos_weight = 1,  
                             subsample=0.8, colsample_bytree=0.8,
                            
                            ).fit(tr_x, tr_y, eval_set=[(va_x, va_y)], 
                             eval_metric='logloss', verbose=True)
     predict_probas = gbm.predict_proba(te)[:,1]
 
-    va_y_pred = gbm.predict_proba(va_x)
+    va_y_pred = gbm.predict_proba(va_x)[:,1]
+
 
 # ====================================================================================== #
 # save result
 save_preds(predict_probas)
 
-va_y_pred = (predict_probas > .5).astype('int32')
-p, r, f = precision_recall_fscore_support(va_y, va_y_pred)
-print('PRF: ', p,r,f)
+va_y_pred = (va_y_pred > .5).astype('int32')
+s = classification_report(va_y, va_y_pred)
+print(s)
