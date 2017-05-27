@@ -295,7 +295,9 @@ if args.xgb:
     import xgboost as xgb
     tr_y = np.ravel(tr_y)
     gbm = xgb.XGBClassifier(max_depth=6, max_delta_step=1, silent=False, n_estimators=500, 
-                            learning_rate=0.01, objective='binary:logistic', 
+                            learning_rate=0.2, objective='binary:logistic', 
+                            min_child_weight = 1, scale_pos_weight = 1,  
+                            subsample=0.8, colsample_bytree=0.8,
                            
                            ).fit(tr_x, tr_y, eval_set=[(va_x, va_y)], 
                             eval_metric='logloss', verbose=True)
@@ -308,5 +310,5 @@ if args.xgb:
 save_preds(predict_probas)
 
 va_y_pred = (predict_probas > .5).astype('int32')
-p, r, f = precision_recall_fscore_support(va_y, y_pred)
+p, r, f = precision_recall_fscore_support(va_y, va_y_pred)
 print('PRF: ', p,r,f)
