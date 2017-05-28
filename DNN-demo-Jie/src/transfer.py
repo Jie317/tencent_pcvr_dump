@@ -47,6 +47,7 @@ import numpy as np
 import pandas as pd
 from time import time, strftime
 from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import classification_report
 print(' >>>>>>>>> Devv stat 15777 >>>>>>>>>>>> ')
 
 def save_preds(preds, cb=False):
@@ -101,16 +102,15 @@ OrderedDict([('conversionTime_d', 0.25819888974716115),
 # ====================================================================================== #
 # ====================================================================================== #
 # data
-#   features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
-#             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
-#             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
-#             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-#             'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
-
-features = ['appCategory', 'positionType', 'adID',
+features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
-            'residence', 'age', 'haveBaby', 'telecomsOperator',
-            'gender', 'education', 'clickTime_h', 'weekDay']
+            'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
+            'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
+            'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
+
+# features = [ 'positionType',
+#             'advertiserID', 'sitesetID', 'connectionType', 'age', 'haveBaby', 'telecomsOperator',
+#             'gender', 'education', 'clickTime_h', 'weekDay']
 features.reverse()
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
@@ -292,10 +292,30 @@ if not args.xgb:
 # ====================================================================================== #
 # xgboost
 if args.xgb:
-    import xgboost as xgb
+    import xgboost as xgb  
+    from numpy import sort
+    from xgboost import plot_importance
+    from sklearn.feature_selection import SelectFromModel
+    from matplotlib import pyplot
     tr_y = np.ravel(tr_y)
-    gbm = xgb.XGBClassifier(max_depth=6, max_delta_step=1, silent=False, n_estimators=500, 
-                            learning_rate=0.2, objective='binary:logistic', 
+
+    s_bef = ''
+    s_aft = ''
+    if 0: 
+        from collections import Counter
+        from imblearn.under_sampling import RandomUnderSampler
+        from imblearn.over_sampling import  RandomOverSampler
+        s_bef = Counter(tr_y)
+        # rus = RandomUnderSampler(.1)
+        rus = RandomOverSampler(.1)
+        tr_x, tr_y = rus.fit_sample(tr_x, tr_y)
+        s_aft = Counter(list(tr_y))
+
+
+
+
+    gbm = xgb.XGBClassifier(max_depth=5, max_delta_step=1, silent=True, n_estimators=500, 
+                            learning_rate=0.3, objective='binary:logistic', 
                             min_child_weight = 1, scale_pos_weight = 1,  
                             subsample=0.8, colsample_bytree=0.8,
                            
@@ -303,12 +323,43 @@ if args.xgb:
                             eval_metric='logloss', verbose=True)
     predict_probas = gbm.predict_proba(te)[:,1]
 
-    va_y_pred = gbm.predict_proba(va_x)
+    va_y_pred = gbm.predict_proba(va_x)[:,1]
+    va_y_pred_class = gbm.predict(va_x)
+
+    s= classification_report(va_y, va_y_pred_class)
+    print(s)
+
+    va_y_pred = (va_y_pred > 0.5).astype('int32')
+    s= classification_report(va_y, va_y_pred)
+    print(s)
+
+
+    # Fit model using each importance as a threshold
+    thresholds = sort(gbm.feature_importances_)
+    print('\nFeature importance: ', thresholds)
+    for thresh in thresholds:
+        # select features using threshold
+        selection = SelectFromModel(gbm, threshold=thresh, prefit=True)
+        select_tr_x = selection.transform(tr_x)
+        # train model
+        selection_model = xgb.XGBClassifier()
+        selection_model.fit(select_tr_x, tr_y)
+        # eval model
+        select_va_x = selection.transform(va_x)
+        va_y_pred = selection_model.predict(select_va_x)
+        s= classification_report(va_y, va_y_pred)
+        print(s, 'Importance threshold: ', thresh)
+
+  
+    plot_importance(gbm)
+    pyplot.show()
 
 # ====================================================================================== #
 # save result
 save_preds(predict_probas)
 
-va_y_pred = (predict_probas > .5).astype('int32')
-p, r, f = precision_recall_fscore_support(va_y, va_y_pred)
-print('PRF: ', p,r,f)
+va_y_pred = (va_y_pred > 0.5).astype('int32')
+s= classification_report(va_y, va_y_pred)
+print(s)
+print('>>>>>>>> Original dataset shape {}'.format(s_bef))
+print('>>>>>>>> Undersampled dataset shape {}'.format(s_aft))
