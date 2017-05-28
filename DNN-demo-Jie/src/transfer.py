@@ -46,9 +46,14 @@ import json
 import numpy as np
 import pandas as pd
 from time import time, strftime
+<<<<<<< HEAD
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import classification_report
 print(' >>>>>>>>> Devv stat 15777 >>>>>>>>>>>> ')
+=======
+from sklearn.metrics import classification_report
+print(' >>>>>>>>> Devv stat 1577799 >>>>>>>>>>>> ')
+>>>>>>> 76c68ab7051329bc3acfdbef2f1599c8f6a3258f
 
 def save_preds(preds, cb=False):
     preds = np.ravel(preds)
@@ -108,9 +113,15 @@ features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
             'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
 
+<<<<<<< HEAD
 # features = [ 'positionType',
 #             'advertiserID', 'sitesetID', 'connectionType', 'age', 'haveBaby', 'telecomsOperator',
 #             'gender', 'education', 'clickTime_h', 'weekDay']
+=======
+# features = ['connectionType', 'telecomsOperator', 'appPlatform', 'gender',
+#        'education', 'marriageStatus', 'haveBaby', 'sitesetID', 'positionType',
+#        'weekDay']
+>>>>>>> 76c68ab7051329bc3acfdbef2f1599c8f6a3258f
 features.reverse()
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
