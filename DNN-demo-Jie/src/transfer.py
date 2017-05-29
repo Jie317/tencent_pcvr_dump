@@ -46,14 +46,10 @@ import json
 import numpy as np
 import pandas as pd
 from time import time, strftime
-<<<<<<< HEAD
+from collections import Counter
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import classification_report
-print(' >>>>>>>>> Devv stat 15777 >>>>>>>>>>>> ')
-=======
-from sklearn.metrics import classification_report
 print(' >>>>>>>>> Devv stat 1577799 >>>>>>>>>>>> ')
->>>>>>> 76c68ab7051329bc3acfdbef2f1599c8f6a3258f
 
 def save_preds(preds, cb=False):
     preds = np.ravel(preds)
@@ -113,20 +109,29 @@ features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 
             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
             'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
 
-<<<<<<< HEAD
 # features = [ 'positionType',
 #             'advertiserID', 'sitesetID', 'connectionType', 'age', 'haveBaby', 'telecomsOperator',
 #             'gender', 'education', 'clickTime_h', 'weekDay']
-=======
 # features = ['connectionType', 'telecomsOperator', 'appPlatform', 'gender',
 #        'education', 'marriageStatus', 'haveBaby', 'sitesetID', 'positionType',
 #        'weekDay']
->>>>>>> 76c68ab7051329bc3acfdbef2f1599c8f6a3258f
 features.reverse()
 
-tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
-te_df_ = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
+tr_df = pd.read_csv('../data/pre/new_generated_train.csv')
+te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 va_df = tr_df.loc[tr_df['clickTime_d'] == 24]
+
+print(tr_df.head())
+
+tr_ui = pd.read_csv('../data/pre/new_tr_ui.csv', header=None).values
+te_ui = pd.read_csv('../data/pre/new_te_ui.csv', header=None).values
+va_ui = pd.read_csv('../data/pre/new_va_ui.csv', header=None).values
+
+tr_ua = pd.read_csv('../data/pre/new_tr_ua.csv', header=None).values
+te_ua = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
+va_ua = pd.read_csv('../data/pre/new_va_ua.csv', header=None).values
+
+
 
 
 if args.rml:
@@ -158,6 +163,7 @@ va_x, va_y = va[:, :-1], va[:, -1:]
 tr_avg = np.average(tr_y)
 max_f_cols = pd.concat([tr_df[features], te_df]).max().values+1
 print(tr_df.columns.values, '\n', max_f_cols)
+s_bef = Counter(np.ravel(tr_y))
 
 
 # ====================================================================================== #
@@ -215,8 +221,8 @@ if not args.xgb:
             for i,f in enumerate(features):
                 y = Embedding(max_f_cols[i], 16, name='emb_%d'%i)(inps[i])
                 y = Flatten(name='fla_%d'%i)(y)
-                y = BatchNormalization()(y)
-                y = Dense(64, activation='relu', name='den_%d'%i, kernel_regularizer='l2')(y)
+                # y = BatchNormalization()(y)
+                y = Dense(64, activation='relu', name='den_%d'%i)(y)
                 y = Dense(1, activation='sigmoid', name='y_%d'%i)(y)
                 f_model = Model(inps[i], y)
 
@@ -254,6 +260,9 @@ if not args.xgb:
 
 
         y = [m.get_layer('den_%d'%i).output for i,m in enumerate(f_emb_models)]
+        inp_ui = Input(shape=(28, ))
+        inp_ua = Input(shape=(28, ))
+
 
         if args.rnn:
             y = concatenate(y)
@@ -263,10 +272,10 @@ if not args.xgb:
             y = Dense(32, activation='tanh', kernel_regularizer=identity_reg, kernel_initializer=Identity(1))(y)
             y = Dense(1, activation='sigmoid')(y)
         if args.mlp:
-            y = concatenate(y)
-            y = Dense(64, activation='relu', kernel_regularizer='l1')(y)
-            y = Dropout(.1)(y)
-            y = Dense(32, activation='relu')(y)
+            y = concatenate(y+[inp_ui, inp_ua])
+            y = Dense(1024, activation='relu', kernel_regularizer='l1')(y)
+            # y = Dropout(.1)(y)
+            y = Dense(512, activation='relu')(y)
             y = Dense(1, activation='sigmoid')(y)
         if args.elr:
             y = concatenate(y)
@@ -274,7 +283,7 @@ if not args.xgb:
             y = Dense(1, activation='sigmoid', kernel_regularizer='l1')(y)
 
 
-        model_final = Model(inps, y)
+        model_final = Model(inps+[inp_ui, inp_ua], y)
         if args.s: model_final.summary()
         model_final.compile('rmsprop', 'binary_crossentropy', ['binary_crossentropy'])
 
@@ -283,9 +292,9 @@ if not args.xgb:
     # training
     if not args.et:
         print('\nStart training final model')
-        model_final.fit(tr_x, tr_y, epochs=5, validation_data=(va_x, va_y), 
+        model_final.fit(tr_x+[tr_ui, tr_ua], tr_y, epochs=5, validation_data=(va_x+[va_ui, va_ua], va_y), 
                     shuffle=True, verbose=1,
-                    batch_size=4096, callbacks=[predCallback(te)])
+                    batch_size=4096, callbacks=[predCallback(te+[te_ui, te_ua])])
 
         # save model
         model_final.save('../trained_models/%s_tl_dnn.h5' % strftime('%m%d_%H%M%S'))
@@ -296,12 +305,13 @@ if not args.xgb:
     # ====================================================================================== #
     # predict
     print('\nPredict')
-    predict_probas = np.ravel(model_final.predict(te, batch_size=40960, verbose=1))
-    va_y_pred = model_final.predict(va_x, batch_size=40960, verbose=1)
+    predict_probas = np.ravel(model_final.predict(te+[te_ui, te_ua], batch_size=40960, verbose=1))
+    va_y_pred = model_final.predict(va_x+[va_ui, va_ua], batch_size=40960, verbose=1)
 
 
 # ====================================================================================== #
 # xgboost
+s_aft = ''
 if args.xgb:
     import xgboost as xgb  
     from numpy import sort
@@ -310,13 +320,9 @@ if args.xgb:
     from matplotlib import pyplot
     tr_y = np.ravel(tr_y)
 
-    s_bef = ''
-    s_aft = ''
     if 0: 
-        from collections import Counter
         from imblearn.under_sampling import RandomUnderSampler
         from imblearn.over_sampling import  RandomOverSampler
-        s_bef = Counter(tr_y)
         # rus = RandomUnderSampler(.1)
         rus = RandomOverSampler(.1)
         tr_x, tr_y = rus.fit_sample(tr_x, tr_y)

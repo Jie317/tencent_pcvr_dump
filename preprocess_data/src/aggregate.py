@@ -56,13 +56,16 @@ print('\n\n',uact_cate.head(), len(uact_cate))
 te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
 te_df = pd.merge(te_df, ui, on='userID', how='left')
 te_df = pd.merge(te_df, uact_cate, on='userID', how='left')
+te_df[['actApps', 'insAppCates']].fillna(str(np.zeros(28)), inplace=True)
 te_df.to_csv('../data/pre/new_with_lists_test.csv', index=False)
 
 
 tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
 tr_df = pd.merge(tr_df, ui, on='userID', how='left')
 tr_df = pd.merge(tr_df, uact_cate, on='userID', how='left')
+tr_df[['actApps', 'insAppCates']].fillna(str(np.zeros(28)), inplace=True)
 tr_df.to_csv('../data/pre/new_with_lists_train.csv', index=False)
+
 
 
 

@@ -62,7 +62,7 @@ from collections import Counter
 from keras import backend as K
 from keras.models import load_model, Sequential, Model
 from keras.utils import plot_model, to_categorical
-from keras.callbacks import TensorBoard, ModelCheckpoint
+from keras.callbacks import TensorBoard, ModelCheckpoint, Callback
 from keras.layers import Dense, Embedding, LSTM, GRU, SimpleRNN, BatchNormalization
 from keras.layers import Dropout, Bidirectional, Flatten, Input
 from keras.layers.merge import Concatenate, Add, concatenate, add
@@ -70,22 +70,36 @@ from keras.layers.merge import Concatenate, Add, concatenate, add
 def s_c(x):
     return [x[:, i:i+1] for i in range(len(x[0]))]
 
-def save_preds(preds):
+def save_preds(preds, cb=False):
+    preds = np.ravel(preds)
     assert len(preds)==338489
-    print('\nTrain average: ', np.average(tr_y))
     avg = np.average(preds)
     std = np.std(preds)
-    print('Preds average: ', avg)
-    print('Preds std dev.: ', std)
+    p = '../%s%s_dnn_tl_result_%.4f_%.4f_%s.csv' % ('callback_' if cb else '', 
+        strftime('%H%M_%m%d'), avg, std, args.m)
 
-    p = '../%s_dnn_sub_%.4f_%.4f_%s.csv' % (strftime('%H%M_%m%d'), avg, std, args.m)
+    df = pd.DataFrame({'instanceID': te_df_['instanceID'].values, 'proba': preds})
+    df.sort_values('instanceID', inplace=True)
+    df.to_csv(p, index=False)
 
-    with open(p, 'w') as res:
-        res.write('instanceID,prob\n')
-        for i,pr in enumerate(preds): res.write('%s,%.8f\n' % ((i+1), pr))
-    print('\nWritten to result file: ', p)
+    if cb: 
+        print(' Written to: ', p)
+        return avg, std
+    else:
+        print('\nTrain average: ', tr_avg)
+        print('Preds average: ', avg)
+        print('Preds std dev.: ', std)
+        print('\nWritten to: ', p)
 
 
+class predCallback(Callback):
+    def __init__(self, test_data):
+        self.te = test_data
+
+    def on_epoch_end(self, epoch, logs={}):
+        predict_probas = np.ravel(self.model.predict(self.te, batch_size=40960, verbose=1))
+        avg, std = save_preds(predict_probas, cb=True)
+        print('\nTr avg: %.4f,   avg: %.4f, std: %.4f\n'%(tr_avg, avg, std))
 
 '''
        ['userID', 'age', 'gender', 'education', 'marriageStatus', 'haveBaby',
@@ -106,9 +120,23 @@ features = features[:args.f]
 if args.of: 
     features = features[-1: ]
 
-tr_df = pd.read_csv('../data/pre/new_generated_train.csv', index_col=0)
-te_df = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
-va_df = tr_df.loc[tr_df['clickTime_d'] == args.vd]
+tr_df = pd.read_csv('../data/pre/new_generated_train.csv')
+te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
+va_df = tr_df.loc[tr_df['clickTime_d'] == 24]
+
+
+
+tr_ui = pd.read_csv('../data/pre/new_tr_ui.csv', header=None).values
+te_ui = pd.read_csv('../data/pre/new_te_ui.csv', header=None).values
+va_ui = pd.read_csv('../data/pre/new_va_ui.csv', header=None).values
+
+tr_ua = pd.read_csv('../data/pre/new_tr_ua.csv', header=None).values
+te_ua = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
+va_ua = pd.read_csv('../data/pre/new_va_ua.csv', header=None).values
+
+
+
+
 
 
 if args.fra:
@@ -133,7 +161,7 @@ if args.olv:
 
 tr_df = tr_df[features+['label']]
 va_df = va_df[features+['label']]
-te_df = te_df[features]
+te_df = te_df_[features]
 
 tr = tr_df.values
 va = va_df.values
@@ -150,6 +178,13 @@ print('--- Selected most important features:', args.f)
 
 tr_x, tr_y = tr[:, :-1], tr[:, -1:]
 va_x, va_y = va[:, :-1], va[:, -1:]
+tr_avg = np.average(tr_y)
+
+# add two lists
+# tr_x = np.hstack([tr_x, tr_ui, tr_ua])
+# te = np.hstack([te, te_ui, te_ua])
+
+
 if not args.nfe:
     va_x = s_c(va_x)
 
@@ -198,7 +233,10 @@ else:
             print('Using fine-grained embedding layers')
             cols_in = []
             cols_out = []
-            f = lambda x: int((math.log10(x)+3)*4)
+            inp_ui = Input(shape=(28, ))
+            inp_ua = Input(shape=(28, ))
+
+            f = lambda x: int((math.log10(x)+1)*4)
             print([f(fe) for fe in max_f_cols])
             for fe in max_f_cols:
                 col_in = Input(shape=(1,))
@@ -209,23 +247,32 @@ else:
                 cols_in.append(col_in)
                 cols_out.append(col_out)
 
-            cols_concatenated = concatenate(cols_out)
+            cols_concatenated = concatenate(cols_out+[inp_ui, inp_ua])
             y = Dense(1024, activation='relu', 
                       kernel_regularizer='l1')(cols_concatenated)
             y = Dropout(.3)(y)
             y = Dense(1024, activation='relu')(y)
             y = Dense(512, activation='relu')(y)
             y = Dense(1, activation='sigmoid')(y)  
-            model = Model(cols_in, y)  
+            model = Model(cols_in+[inp_ui, inp_ua], y)  
 
         else:
-            model = Sequential()
-            model.add(Embedding(max_feature, 16, input_length = input_length))        
-            model.add(Flatten())
-            model.add(Dense(1024, activation='relu'))
-            model.add(Dense(1024, activation='relu'))
-            model.add(Dense(512, activation='relu'))
-            model.add(Dense(1, activation='sigmoid')) 
+            inp_x = Input(shape=(input_length, ))
+            inp_ui = Input(shape=(28, ))
+            inp_ua = Input(shape=(28, ))
+
+            o_x = Embedding(max_feature, 16)(inp_x)
+            o_x = Flatten()(o_x) # 16* max_feature
+
+            y = concatenate([o_x, inp_ui, inp_ua])
+
+            # y = Dropout(.3)(y)
+            y = Dense(1024, activation='relu')(y)
+            y = Dense(512, activation='relu')(y)
+            y = Dense(1, activation='sigmoid')(y)   
+
+            model = Model([inp_x, inp_ui, inp_ua], y)
+
 
     if args.elr: # logistic regression after embedding
         model = Sequential()
@@ -244,11 +291,12 @@ if not args.et:
   #  plot_model(model, to_file='../meta/model.png', show_shapes=True)
 
     # 5 fit the model (training)
-    if not args.nfe:
+    if not args.nfe: 
         tr_x = s_c(tr_x)
-    model.fit(tr_x, tr_y, epochs=args.e, validation_data=(va_x, va_y), 
+        te = s_c(te)
+    model.fit(tr_x+[tr_ui, tr_ua], tr_y, epochs=args.e, validation_data=(va_x+[va_ui, va_ua], va_y), 
         shuffle=True, verbose=args.v,
-        batch_size=batch_size, callbacks=[checkpoint, tbCallBack])
+        batch_size=batch_size, callbacks=[predCallback(te+[te_ui, te_ua])])
 
     if not args.ns: 
         model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
@@ -272,8 +320,6 @@ if args.olv:
 
 # 7 calculate predictions
 print('\nPrediction')
-if not args.nfe:
-    te = s_c(te)
 
-predict_probas = np.ravel(model.predict(te, batch_size=4096*2, verbose=args.v))
+predict_probas = np.ravel(model.predict(te+[te_ui, te_ua], batch_size=4096*2, verbose=args.v))
 save_preds(predict_probas)
