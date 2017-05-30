@@ -13,7 +13,7 @@ parser.add_argument('-nm', action='store_true',
     help='not mask future information')
 parser.add_argument('-e', type=int, default=5,
     help='epochs')
-parser.add_argument('-f', type=int, default=9,
+parser.add_argument('-f', type=int, default=11,
     help='the f most important independent features (<=22)')
 parser.add_argument('-v', type=int, default=1,
     help='verbose')
@@ -25,8 +25,10 @@ parser.add_argument('-nfe', action='store_true',
     help='not use fine-grained embedding layers')
 parser.add_argument('-ct', action='store_true',
     help='continue training last model')
-parser.add_argument('-m', type=str, required=True,
+parser.add_argument('-mess', type=str, default='no_mess',
     help='leave a message')
+parser.add_argument('-m', type=str, default='mlp', required=True,
+                    help='model name - lr | mlp | mlp_fe | elr | rf | xgb')
 
 
 g = parser.add_mutually_exclusive_group(required=False)
@@ -39,14 +41,6 @@ g.add_argument('-fra', action='store_true',
 g.add_argument('-olv', action='store_true',
     help='use offline validation train and test datasets')
 
-
-group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument('-elr', action='store_true',
-    help='logistic regression after embedding')
-group.add_argument('-mlp', action='store_true',
-    help='multilayer perceptrons')
-group.add_argument('-rnn', action='store_true',
-    help='recurrent networks')
 
 args = parser.parse_args()
 
@@ -64,7 +58,7 @@ from keras.models import load_model, Sequential, Model
 from keras.utils import plot_model, to_categorical
 from keras.callbacks import TensorBoard, ModelCheckpoint, Callback
 from keras.layers import Dense, Embedding, LSTM, GRU, SimpleRNN, BatchNormalization
-from keras.layers import Dropout, Bidirectional, Flatten, Input
+from keras.layers import Dropout, Bidirectional, Flatten, Input, Reshape
 from keras.layers.merge import Concatenate, Add, concatenate, add
 
 def s_c(x):
@@ -75,7 +69,7 @@ def save_preds(preds, cb=False):
     assert len(preds)==338489
     avg = np.average(preds)
     std = np.std(preds)
-    p = '../%s%s_dnn_tl_result_%.4f_%.4f_%s.csv' % ('callback_' if cb else '', 
+    p = '../%s%s_tl_result_%.4f_%.4f_%s.csv' % ('cb_' if cb else '', 
         strftime('%H%M_%m%d'), avg, std, args.m)
 
     df = pd.DataFrame({'instanceID': te_df_['instanceID'].values, 'proba': preds})
@@ -83,8 +77,7 @@ def save_preds(preds, cb=False):
     df.to_csv(p, index=False)
 
     if cb: 
-        print(' Written to: ', p)
-        return avg, std
+        return avg, std, p
     else:
         print('\nTrain average: ', tr_avg)
         print('Preds average: ', avg)
@@ -94,12 +87,12 @@ def save_preds(preds, cb=False):
 
 class predCallback(Callback):
     def __init__(self, test_data):
-        self.te = test_data
+        self.te_x = test_data
 
     def on_epoch_end(self, epoch, logs={}):
-        predict_probas = np.ravel(self.model.predict(self.te, batch_size=40960, verbose=1))
-        avg, std = save_preds(predict_probas, cb=True)
-        print('\nTr avg: %.4f,   avg: %.4f, std: %.4f\n'%(tr_avg, avg, std))
+        predict_probas = np.ravel(self.model.predict(self.te_x, batch_size=40960, verbose=1))
+        avg, std, p = save_preds(predict_probas, cb=True)
+        print('\nTr avg: %.4f,   avg: %.4f, std: %.4f, written to: %s\n'%(tr_avg, avg, std, p))
 
 '''
        ['userID', 'age', 'gender', 'education', 'marriageStatus', 'haveBaby',
@@ -135,7 +128,9 @@ te_ua = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
 va_ua = pd.read_csv('../data/pre/new_va_ua.csv', header=None).values
 
 
-
+te_adAppCate = pd.read_csv('../data/pre/new_adAppCate_te.csv', index_col=0).values
+tr_adAppCate = pd.read_csv('../data/pre/new_adAppCate_tr.csv', index_col=0).values
+va_adAppCate = pd.read_csv('../data/pre/new_adAppCate_va.csv', index_col=0).values
 
 
 
@@ -165,10 +160,10 @@ te_df = te_df_[features]
 
 tr = tr_df.values
 va = va_df.values
-te = te_df.values
+te_x = te_df.values
 np.random.shuffle(tr)
 input_length = len(tr[0])-1
-max_feature = max(tr.max(), va.max() if args.olv else 0, te.max())+1
+max_feature = max(tr.max(), va.max() if args.olv else 0, te_x.max())+1
 max_f_cols = tr_df.max().values[:-1]+1
 print('--- Train cols: ', tr_df.columns)
 print('--- Validation day:', args.vd, len(va_df))
@@ -184,9 +179,6 @@ tr_avg = np.average(tr_y)
 # tr_x = np.hstack([tr_x, tr_ui, tr_ua])
 # te = np.hstack([te, te_ui, te_ua])
 
-
-if not args.nfe:
-    va_x = s_c(va_x)
 
 
 # ====================== 2 Build model and training ==================== #
@@ -221,65 +213,79 @@ if args.et or args.ct:
     if args.s: model.summary() 
 
 else:
-    if args.rnn: # recurrent networks
+    if args.m=='rnn': # recurrent networks
         model = Sequential()
-        model.add(Embedding(max_feature, 16, input_length = input_length))
-        model.add(LSTM(128, activation='tanh', return_sequences=True))   
-        model.add(LSTM(32, activation='tanh'))
+        # model.add(Embedding(max_feature, 16, input_length = input_length))
+        model.add(LSTM(128, activation='tanh', return_sequences=False, input_shape=(3, 28)))   
+        # model.add(LSTM(32, activation='tanh'))
+        model.add(Dense(64, activation='tanh')) 
         model.add(Dense(1, activation='sigmoid')) 
+        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-    if args.mlp: # multilayer perceptrons
-        if not args.nfe:
-            print('Using fine-grained embedding layers')
-            cols_in = []
-            cols_out = []
-            inp_ui = Input(shape=(28, ))
-            inp_ua = Input(shape=(28, ))
-
-            f = lambda x: int((math.log10(x)+1)*4)
-            print([f(fe) for fe in max_f_cols])
-            for fe in max_f_cols:
-                col_in = Input(shape=(1,))
-                col_out = Embedding(int(fe), f(fe))(col_in)
-                col_out = Flatten()(col_out)
-                col_out = BatchNormalization()(col_out) 
-
-                cols_in.append(col_in)
-                cols_out.append(col_out)
-
-            cols_concatenated = concatenate(cols_out+[inp_ui, inp_ua])
-            y = Dense(1024, activation='relu', 
-                      kernel_regularizer='l1')(cols_concatenated)
-            y = Dropout(.3)(y)
-            y = Dense(1024, activation='relu')(y)
-            y = Dense(512, activation='relu')(y)
-            y = Dense(1, activation='sigmoid')(y)  
-            model = Model(cols_in+[inp_ui, inp_ua], y)  
-
-        else:
-            inp_x = Input(shape=(input_length, ))
-            inp_ui = Input(shape=(28, ))
-            inp_ua = Input(shape=(28, ))
-
-            o_x = Embedding(max_feature, 16)(inp_x)
-            o_x = Flatten()(o_x) # 16* max_feature
-
-            y = concatenate([o_x, inp_ui, inp_ua])
-
-            # y = Dropout(.3)(y)
-            y = Dense(1024, activation='relu')(y)
-            y = Dense(512, activation='relu')(y)
-            y = Dense(1, activation='sigmoid')(y)   
-
-            model = Model([inp_x, inp_ui, inp_ua], y)
+        tr_x = list(zip(tr_ui, tr_ua, tr_adAppCate))
+        te_x = list(zip(te_ui, te_ua, te_adAppCate))
+        va_x = list(zip(va_ui, va_ua, va_adAppCate))
 
 
-    if args.elr: # logistic regression after embedding
+    if args.m=='mlp_fe': # multilayer perceptrons
+        print('Using fine-grained embedding layers')
+        cols_in = []
+        cols_out = []
+        inp_ui = Input(shape=(28, ))
+        inp_ua = Input(shape=(28, ))
+
+        f = lambda x: int((math.log10(x)+1)*4)
+        print([f(fe) for fe in max_f_cols])
+        for fe in max_f_cols:
+            col_in = Input(shape=(1,))
+            col_out = Embedding(int(fe), f(fe))(col_in)
+            col_out = Flatten()(col_out)
+            col_out = BatchNormalization()(col_out) 
+
+            cols_in.append(col_in)
+            cols_out.append(col_out)
+
+        cols_concatenated = concatenate(cols_out+[inp_ui, inp_ua])
+        y = Dense(1024, activation='relu', 
+                  kernel_regularizer='l1')(cols_concatenated)
+        y = Dropout(.3)(y)
+        y = Dense(1024, activation='relu')(y)
+        y = Dense(512, activation='relu')(y)
+        y = Dense(1, activation='sigmoid')(y)  
+        model = Model(cols_in+[inp_ui, inp_ua], y)  
+
+        tr_x = s_c(tr_x)+[tr_ui, tr_ua]
+        te_x = s_c(te)+[te_ui, te_ua]
+        va_x = s_c(va)+[va_ui, va_ua]
+
+    if args.m=='mlp':
+        print('Building MLP')
+        inp_x = Input(shape=(input_length, ))
+        inp_ui = Input(shape=(28, ))
+        inp_ua = Input(shape=(28, ))
+
+        o_x = Embedding(max_feature, 16)(inp_x)
+        o_x = Flatten()(o_x) # 16* max_feature
+
+        y = concatenate([o_x, inp_ui, inp_ua])
+
+        # y = Dropout(.3)(y)
+        y = Dense(1024, activation='relu', kernel_regularizer='l2')(y)
+        y = Dense(512, activation='relu')(y)
+        y = Dense(1, activation='sigmoid')(y)   
+
+        model = Model([inp_x, inp_ui, inp_ua], y)
+
+        tr_x = [tr_x, tr_ui, tr_ua]
+        te_x = [te_x, te_ui, te_ua]
+        va_x = [va_x, va_ui, va_ua]
+
+
+    if args.m=='elr': # logistic regression after embedding
         model = Sequential()
         model.add(Embedding(max_feature, 16, input_length = input_length))
         model.add(Flatten())
         model.add(Dense(64, activation='relu'))
-
         model.add(Dense(1, activation='sigmoid')) 
 
         
@@ -288,15 +294,11 @@ if not args.et:
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
     if args.s: model.summary() 
     print('\n', strftime('%c'))
-  #  plot_model(model, to_file='../meta/model.png', show_shapes=True)
 
-    # 5 fit the model (training)
-    if not args.nfe: 
-        tr_x = s_c(tr_x)
-        te = s_c(te)
-    model.fit(tr_x+[tr_ui, tr_ua], tr_y, epochs=args.e, validation_data=(va_x+[va_ui, va_ua], va_y), 
-        shuffle=True, verbose=args.v,
-        batch_size=batch_size, callbacks=[predCallback(te+[te_ui, te_ua])])
+    # 5 fit the model (training)  callbacks=[predCallback(te_x)]   validation_data=(va_x, va_y), 
+    model.fit(tr_x, tr_y, epochs=args.e, validation_data=(va_x, va_y), 
+                                    shuffle=True, verbose=args.v,
+                                    batch_size=batch_size, callbacks=[predCallback(te_x)])
 
     if not args.ns: 
         model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
@@ -321,5 +323,5 @@ if args.olv:
 # 7 calculate predictions
 print('\nPrediction')
 
-predict_probas = np.ravel(model.predict(te+[te_ui, te_ua], batch_size=4096*2, verbose=args.v))
+predict_probas = np.ravel(model.predict(te_x, batch_size=4096*2, verbose=args.v))
 save_preds(predict_probas)
