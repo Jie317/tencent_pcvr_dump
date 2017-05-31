@@ -18,7 +18,7 @@ parser.add_argument('-nm', action='store_true',
 
 parser.add_argument('-nc', action='store_true', 
     help='not use cached data')
-parser.add_argument('-md', atype=int, default=10,
+parser.add_argument('-md', type=int, default=10,
     help='max depth')
 parser.add_argument('-ne', type=int, default=200,
     help='nb estimators')
@@ -114,9 +114,9 @@ features = ['advertiserID', 'sitesetID', 'age']
 #        'weekDay']
 features.reverse()
 
+te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 if args.nc:
     tr_df = pd.read_csv('../data/pre/new_generated_train.csv')
-    te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
     va_df = tr_df.loc[tr_df['clickTime_d'] == 24]
 
     print(tr_df.head())
@@ -179,7 +179,7 @@ try:
     (tr_x,te_x,va_x,tr_y,_,va_y) = pickle.load( open('../data/pre/dump_xgboost.bin', 'rb'))
     tr_y = np.ravel(tr_y)
     va_y = np.ravel(va_y)
-    print('Cached data')
+    print('Loaded cached data')
 except Exception as e:
     print('Cached data not found')
     pickle.dump((tr_x,te_x,va_x,tr_y,va_y), open('../data/pre/dump_xgboost.bin', 'wb'))
