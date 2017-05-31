@@ -162,8 +162,8 @@ if args.nc:
 
 
     tr_x = np.concatenate((encoded_x[:len(tr_df)], tr_ui, tr_ua, tr_df[features].values), axis=1)
-    te_x = np.concatenate((encoded_x[len(tr_df_):len(tr_df_)+len(te_df)], te_ui, te_ua, te_df_[features].values), axis=1)
-    va_x = np.concatenate((encoded_x[-len(va_df):], va_ui, va_ua, va_df_[features].values), axis=1)
+    te_x = np.concatenate((encoded_x[len(tr_df):len(tr_df)+len(te_df_)], te_ui, te_ua, te_df_[features].values), axis=1)
+    va_x = np.concatenate((encoded_x[-len(va_df):], va_ui, va_ua, va_df[features].values), axis=1)
     assert len(te_x)==len(te_df_)
 
     tr_y = tr_df['label'].values.reshape(-1,1)
@@ -216,14 +216,13 @@ if 0:
 
 
 
-gbm = xgb.XGBClassifier(max_depth=5, max_delta_step=1, silent=True, n_estimators=500, 
+gbm = xgb.XGBClassifier(max_depth=5, max_delta_step=1, silent=True, n_estimators=5, 
                         learning_rate=0.3, objective='binary:logistic', 
                         min_child_weight = 1, scale_pos_weight = 1,  
-                        subsample=0.8, colsample_bytree=0.8, nthread=16,
-                       
+                        subsample=0.8, colsample_bytree=0.8, 
                        ).fit(tr_x, tr_y, eval_set=[(va_x, va_y)], 
                         eval_metric='logloss', verbose=True)
-predict_probas = gbm.predict_proba(te)[:,1]
+predict_probas = gbm.predict_proba(te_x)[:,1]
 
 va_y_pred = gbm.predict_proba(va_x)[:,1]
 
@@ -247,8 +246,11 @@ for thresh in thresholds:
     selection = SelectFromModel(gbm, threshold=thresh, prefit=True)
     select_tr_x = selection.transform(tr_x)
     # train model
-    selection_model = xgb.XGBClassifier()
-    selection_model.fit(select_tr_x, tr_y)
+    selection_model = xgb.XGBClassifier(max_depth=5, max_delta_step=1, silent=True, 
+                        learning_rate=0.3, objective='binary:logistic', 
+                        min_child_weight = 1, scale_pos_weight = 1,  
+                        subsample=0.8, colsample_bytree=0.8, )
+    selection_model.fit(select_tr_x, tr_y, verbose=True)
     # eval model
     select_va_x = selection.transform(va_x)
     va_y_pred = selection_model.predict(select_va_x)
