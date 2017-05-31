@@ -36,6 +36,7 @@ from time import time, strftime
 from collections import Counter
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import classification_report
+from sklearn.preprocessing import OneHotEncoder
 print(' >>>>>>>>> Devv stat 1577799 >>>>>>>>>>>> ')
 
 def save_preds(preds, cb=False):
@@ -152,7 +153,7 @@ for f in cate_features:
         encoded_x = feature
     else:
         encoded_x = np.concatenate((encoded_x, feature), axis=1)
-print("X shape: : ", encoded_x.shape)
+print("\nX shape: ", encoded_x.shape)
 
 
 tr_x = np.concatenate((encoded_x[:,:len(tr_df)], tr_ui, tr_ua, tr_df[features].values), axis=1)
@@ -187,8 +188,6 @@ from xgboost import plot_importance
 from sklearn.feature_selection import SelectFromModel
 from sklearn.metrics import log_loss
 from matplotlib import pyplot
-tr_y = np.ravel(tr_y)
-va_y = np.ravel(va_y)
 
 if 0: 
     from imblearn.under_sampling import RandomUnderSampler
