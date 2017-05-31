@@ -110,9 +110,9 @@ features = ['advertiserID', 'sitesetID', 'age']
 #        'weekDay']
 features.reverse()
 
+te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 if args.nc:
     tr_df = pd.read_csv('../data/pre/new_generated_train.csv')
-    te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
     va_df = tr_df.loc[tr_df['clickTime_d'] == 24]
 
     print(tr_df.head())
@@ -217,7 +217,7 @@ if 0:
 
 
 
-gbm = xgb.XGBClassifier(max_depth=10, max_delta_step=1, silent=True, n_estimators=200, 
+gbm = xgb.XGBClassifier(max_depth=10, max_delta_step=1, silent=True, n_estimators=150, 
                         learning_rate=0.3, objective='binary:logistic', 
                         min_child_weight = 1, scale_pos_weight = 1,  
                         subsample=0.8, colsample_bytree=0.8, 
