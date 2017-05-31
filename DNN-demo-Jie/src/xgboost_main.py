@@ -18,6 +18,10 @@ parser.add_argument('-nm', action='store_true',
 
 parser.add_argument('-nc', action='store_true', 
     help='not use cached data')
+parser.add_argument('-md', atype=int, default=10,
+    help='max depth')
+parser.add_argument('-ne', type=int, default=200,
+    help='nb estimators')
 
 
 g = parser.add_mutually_exclusive_group(required=False)
@@ -47,7 +51,7 @@ def save_preds(preds, cb=False):
     assert len(preds)==338489
     avg = np.average(preds)
     std = np.std(preds)
-    p = '../%s%s_dnn_tl_result_%.4f_%.4f_%s.csv' % ('callback_' if cb else '', 
+    p = '%s%s_dnn_tl_result_%.4f_%.4f_%s.csv' % ('callback_' if cb else '', 
         strftime('%H%M_%m%d'), avg, std, args.m)
 
     df = pd.DataFrame({'instanceID': te_df_['instanceID'].values, 'proba': preds})
@@ -166,18 +170,19 @@ if args.nc:
     va_x = np.concatenate((encoded_x[-len(va_df):], va_ui, va_ua, va_df[features].values), axis=1)
     assert len(te_x)==len(te_df_)
 
-    tr_y = tr_df['label'].values.reshape(-1,1)
-    te_y = te_df_['label'].values.reshape(-1,1)
-    va_y = va_df['label'].values.reshape(-1,1)
+    tr_y = tr_df['label'].values
+    va_y = va_df['label'].values
 
 
 import pickle
 try:
-    (tr_x,te_x,va_x,tr_y,te_y,va_y) = pickle.load( open('../data/pre/dump_xgboost.bin', 'rb'))
+    (tr_x,te_x,va_x,tr_y,_,va_y) = pickle.load( open('../data/pre/dump_xgboost.bin', 'rb'))
+    tr_y = np.ravel(tr_y)
+    va_y = np.ravel(va_y)
     print('Cached data')
 except Exception as e:
     print('Cached data not found')
-    pickle.dump((tr_x,te_x,va_x,tr_y,te_y,va_y), open('../data/pre/dump_xgboost.bin', 'wb'))
+    pickle.dump((tr_x,te_x,va_x,tr_y,va_y), open('../data/pre/dump_xgboost.bin', 'wb'))
 
 
 
@@ -216,13 +221,14 @@ if 0:
 
 
 
-gbm = xgb.XGBClassifier(max_depth=5, max_delta_step=1, silent=True, n_estimators=5, 
+gbm = xgb.XGBClassifier(max_depth=args.md, max_delta_step=1, silent=True, n_estimators=args.ne, 
                         learning_rate=0.3, objective='binary:logistic', 
                         min_child_weight = 1, scale_pos_weight = 1,  
                         subsample=0.8, colsample_bytree=0.8, 
                        ).fit(tr_x, tr_y, eval_set=[(va_x, va_y)], 
                         eval_metric='logloss', verbose=True)
 predict_probas = gbm.predict_proba(te_x)[:,1]
+save_preds(predict_probas)
 
 va_y_pred = gbm.predict_proba(va_x)[:,1]
 
@@ -241,19 +247,20 @@ print(s)
 # Fit model using each importance as a threshold
 thresholds = sort(gbm.feature_importances_)
 print('\nFeature importance: ', thresholds)
-for thresh in thresholds:
+for thresh in thresholds[::20]:
     # select features using threshold
     selection = SelectFromModel(gbm, threshold=thresh, prefit=True)
     select_tr_x = selection.transform(tr_x)
     # train model
-    selection_model = xgb.XGBClassifier(max_depth=5, max_delta_step=1, silent=True, 
+    selection_model = xgb.XGBClassifier(max_depth=15, max_delta_step=1, silent=True, 
                         learning_rate=0.3, objective='binary:logistic', 
-                        min_child_weight = 1, scale_pos_weight = 1,  
-                        subsample=0.8, colsample_bytree=0.8, )
+                        min_child_weight = 1, scale_pos_weight = 1 )
     selection_model.fit(select_tr_x, tr_y, verbose=True)
     # eval model
     select_va_x = selection.transform(va_x)
     va_y_pred = selection_model.predict(select_va_x)
+    predict_probas = selection_model.predict_proba(te_x)[:,1]
+    save_preds(predict_probas)
     logloss = log_loss(va_y, va_y_pred)
     print('Logloss: ', logloss)
     s= classification_report(va_y, va_y_pred)
@@ -265,7 +272,6 @@ pyplot.show()
 
 # ====================================================================================== #
 # save result
-save_preds(predict_probas)
 
 va_y_pred = (va_y_pred > 0.5).astype('int32')
 s= classification_report(va_y, va_y_pred)
