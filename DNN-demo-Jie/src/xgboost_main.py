@@ -47,7 +47,7 @@ def save_preds(preds, cb=False):
     assert len(preds)==338489
     avg = np.average(preds)
     std = np.std(preds)
-    p = '../%s%s_dnn_tl_result_%.4f_%.4f_%s.csv' % ('callback_' if cb else '', 
+    p = '%s%s_dnn_tl_result_%.4f_%.4f_%s.csv' % ('callback_' if cb else '', 
         strftime('%H%M_%m%d'), avg, std, args.m)
 
     df = pd.DataFrame({'instanceID': te_df_['instanceID'].values, 'proba': preds})
@@ -166,18 +166,19 @@ if args.nc:
     va_x = np.concatenate((encoded_x[-len(va_df):], va_ui, va_ua, va_df[features].values), axis=1)
     assert len(te_x)==len(te_df_)
 
-    tr_y = tr_df['label'].values.reshape(-1,1)
-    te_y = te_df_['label'].values.reshape(-1,1)
-    va_y = va_df['label'].values.reshape(-1,1)
+    tr_y = tr_df['label'].values
+    va_y = va_df['label'].values
 
 
 import pickle
 try:
-    (tr_x,te_x,va_x,tr_y,te_y,va_y) = pickle.load( open('../data/pre/dump_xgboost.bin', 'rb'))
+    (tr_x,te_x,va_x,tr_y,_,va_y) = pickle.load( open('../data/pre/dump_xgboost.bin', 'rb'))
+    tr_y = np.ravel(tr_y)
+    va_y = np.ravel(va_y)
     print('Cached data')
 except Exception as e:
     print('Cached data not found')
-    pickle.dump((tr_x,te_x,va_x,tr_y,te_y,va_y), open('../data/pre/dump_xgboost.bin', 'wb'))
+    pickle.dump((tr_x,te_x,va_x,tr_y,va_y), open('../data/pre/dump_xgboost.bin', 'wb'))
 
 
 
@@ -216,13 +217,14 @@ if 0:
 
 
 
-gbm = xgb.XGBClassifier(max_depth=5, max_delta_step=1, silent=True, n_estimators=5, 
+gbm = xgb.XGBClassifier(max_depth=10, max_delta_step=1, silent=True, n_estimators=500, 
                         learning_rate=0.3, objective='binary:logistic', 
                         min_child_weight = 1, scale_pos_weight = 1,  
                         subsample=0.8, colsample_bytree=0.8, 
                        ).fit(tr_x, tr_y, eval_set=[(va_x, va_y)], 
                         eval_metric='logloss', verbose=True)
 predict_probas = gbm.predict_proba(te_x)[:,1]
+save_preds(predict_probas)
 
 va_y_pred = gbm.predict_proba(va_x)[:,1]
 
@@ -265,7 +267,6 @@ pyplot.show()
 
 # ====================================================================================== #
 # save result
-save_preds(predict_probas)
 
 va_y_pred = (va_y_pred > 0.5).astype('int32')
 s= classification_report(va_y, va_y_pred)
