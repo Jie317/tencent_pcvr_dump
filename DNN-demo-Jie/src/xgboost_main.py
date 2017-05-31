@@ -217,7 +217,7 @@ if 0:
 
 
 
-gbm = xgb.XGBClassifier(max_depth=10, max_delta_step=1, silent=True, n_estimators=500, 
+gbm = xgb.XGBClassifier(max_depth=10, max_delta_step=1, silent=True, n_estimators=200, 
                         learning_rate=0.3, objective='binary:logistic', 
                         min_child_weight = 1, scale_pos_weight = 1,  
                         subsample=0.8, colsample_bytree=0.8, 
