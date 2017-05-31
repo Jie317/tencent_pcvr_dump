@@ -103,15 +103,17 @@ OrderedDict([('conversionTime_d', 0.25819888974716115),
 # ====================================================================================== #
 # ====================================================================================== #
 # data
-features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
-            'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
-            'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
-            'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
+# features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
+#             'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
+#             'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
+#             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
+#             'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
 
-# features = [ 'positionType',
-#             'advertiserID', 'sitesetID', 'connectionType', 'age', 'haveBaby', 'telecomsOperator',
-#             'gender', 'education', 'clickTime_h', 'weekDay']
+cate_features = ['appCategory', 'positionType', 'connectionType', 'haveBaby', 'telecomsOperator',
+            'gender', 'education', 'clickTime_h', 'weekDay',
+            'marriageStatus', 'appPlatform']
+
+features = ['advertiserID', 'sitesetID', 'age']
 # features = ['connectionType', 'telecomsOperator', 'appPlatform', 'gender',
 #        'education', 'marriageStatus', 'haveBaby', 'sitesetID', 'positionType',
 #        'weekDay']
