@@ -77,7 +77,7 @@ def save_preds(preds, cb=False):
 OrderedDict([('conversionTime_d', 0.25819888974716115),
              ('userID', 0.16155678776166404),
              ('appCategory', 0.11342039643011995),
-             ('positionID', 0.097800108293958354),
+             ('positionID', 0.0978001sr 08293958354),
              ('positionType', 0.087460470534174911),
              ('creativeID', 0.071309827665513831),
              ('appID', 0.06958037043067912),
