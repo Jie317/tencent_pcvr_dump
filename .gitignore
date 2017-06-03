@@ -1,6 +1,7 @@
 */*
 !*/src/
 !*/data
+!*/bests/
 
 */src/*.pyc
 */src/.~*
