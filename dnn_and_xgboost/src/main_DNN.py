@@ -111,13 +111,13 @@ features = features[:args.f]
 if args.of: 
     features = features[-1: ]
 
-tr_ui = pd.read_csv('../data/pre/new_tr_ui.csv', header=None)
-te_ui = pd.read_csv('../data/pre/new_te_ui.csv', header=None).values
-tr_ua = pd.read_csv('../data/pre/new_tr_ua.csv', header=None)
-te_ua = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
-tr_adAppCate = pd.read_csv('../data/pre/new_adAppCate_tr.csv', index_col=0)
-te_adAppCate = pd.read_csv('../data/pre/new_adAppCate_te.csv', index_col=0).values
-tr_df = pd.read_csv('../data/pre/new_generated_train.csv')
+tr_ui_ = pd.read_csv('../data/pre/new_tr_ui.csv', header=None)
+te_ui_ = pd.read_csv('../data/pre/new_te_ui.csv', header=None).values
+tr_ua_ = pd.read_csv('../data/pre/new_tr_ua.csv', header=None)
+te_ua_ = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
+tr_adAppCate_ = pd.read_csv('../data/pre/new_adAppCate_tr.csv', index_col=0)
+te_adAppCate_ = pd.read_csv('../data/pre/new_adAppCate_te.csv', index_col=0).values
+tr_df_ = pd.read_csv('../data/pre/new_generated_train.csv')
 te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 
 
@@ -125,22 +125,22 @@ seeds = list(range(20,100,3))
 np.random.shuffle(seeds)
 for seed in seeds:
     print('\n\nSeed:', seed)
-    va_ui = tr_ui.sample(frac=.1, random_state=seed)
-    tr_ui = tr_ui.drop(va_ui.index, axis=0).values
+    va_ui = tr_ui_.sample(frac=.1, random_state=seed)
+    tr_ui = tr_ui_.drop(va_ui.index, axis=0).values
     va_ui = va_ui.values
 
-    va_ua = tr_ua.sample(frac=.1, random_state=seed)
-    tr_ua = tr_ua.drop(va_ua.index, axis=0).values
+    va_ua = tr_ua_.sample(frac=.1, random_state=seed)
+    tr_ua = tr_ua_.drop(va_ua.index, axis=0).values
     va_ua = va_ua.values
 
 
-    va_adAppCate = tr_adAppCate.sample(frac=.1, random_state=seed)
-    tr_adAppCate = tr_adAppCate.drop(va_adAppCate.index, axis=0).values
+    va_adAppCate = tr_adAppCate_.sample(frac=.1, random_state=seed)
+    tr_adAppCate = tr_adAppCate_.drop(va_adAppCate.index, axis=0).values
     va_adAppCate = va_adAppCate.values
 
     # va_df = tr_df.loc[tr_df['clickTime_d'] == 24]
-    va_df = tr_df.sample(frac=.1, random_state=seed)
-    tr_df = tr_df.drop(va_df.index, axis=0)
+    va_df = tr_df_.sample(frac=.1, random_state=seed)
+    tr_df = tr_df_.drop(va_df.index, axis=0)
 
 
 
