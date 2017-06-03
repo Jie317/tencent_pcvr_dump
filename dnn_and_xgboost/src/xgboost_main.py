@@ -41,7 +41,7 @@ import numpy as np
 import pandas as pd
 from time import time, strftime
 from collections import Counter
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import OneHotEncoder
 print(' >>>>>>>>> Devv stat 1577799 >>>>>>>>>>>> ')
@@ -195,10 +195,10 @@ except Exception as e:
 # np.random.shuffle(tr)
 # tr_x, tr_y = tr[:, :-1], tr[:, -1:]
 # va_x, va_y = va[:, :-1], va[:, -1:]
-# tr_avg = np.average(tr_y)
+tr_avg = np.average(tr_y)
 # max_f_cols = pd.concat([tr_df[features], te_df]).max().values+1
 # print(tr_df.columns.values, '\n', max_f_cols)
-# s_bef = Counter(np.ravel(tr_y))
+s_bef = Counter(np.ravel(tr_y))
 
 # ====================================================================================== #
 # xgboost
@@ -224,7 +224,7 @@ if 0:
 gbm = xgb.XGBClassifier(max_depth=args.md, max_delta_step=1, silent=True, n_estimators=args.ne, 
                         learning_rate=0.3, objective='binary:logistic', 
                         min_child_weight = 1, scale_pos_weight = 1,  
-                        subsample=0.8, colsample_bytree=0.8, 
+                        subsample=0.8, colsample_bytree=0.8, nthread=3,
                        ).fit(tr_x, tr_y, eval_set=[(va_x, va_y)], 
                         eval_metric='logloss', verbose=True)
 predict_probas = gbm.predict_proba(te_x)[:,1]
@@ -241,30 +241,31 @@ print(s)
 
 va_y_pred = (va_y_pred > 0.5).astype('int32')
 s= classification_report(va_y, va_y_pred)
-print(s)
+s_rocauc= roc_auc_score(va_y, va_y_pred)
+print(s, '\n', s_rocauc)
 
 
-# Fit model using each importance as a threshold
-thresholds = sort(gbm.feature_importances_)
-print('\nFeature importance: ', thresholds)
-for thresh in thresholds[::20]:
-    # select features using threshold
-    selection = SelectFromModel(gbm, threshold=thresh, prefit=True)
-    select_tr_x = selection.transform(tr_x)
-    # train model
-    selection_model = xgb.XGBClassifier(max_depth=15, max_delta_step=1, silent=True, 
-                        learning_rate=0.3, objective='binary:logistic', 
-                        min_child_weight = 1, scale_pos_weight = 1 )
-    selection_model.fit(select_tr_x, tr_y, verbose=True)
-    # eval model
-    select_va_x = selection.transform(va_x)
-    va_y_pred = selection_model.predict(select_va_x)
-    predict_probas = selection_model.predict_proba(te_x)[:,1]
-    save_preds(predict_probas)
-    logloss = log_loss(va_y, va_y_pred)
-    print('Logloss: ', logloss)
-    s= classification_report(va_y, va_y_pred)
-    print(s, 'Importance threshold: ', thresh)
+# # Fit model using each importance as a threshold
+# thresholds = sort(gbm.feature_importances_)
+# print('\nFeature importance: ', thresholds)
+# for thresh in thresholds[::20]:
+#     # select features using threshold
+#     selection = SelectFromModel(gbm, threshold=thresh, prefit=True)
+#     select_tr_x = selection.transform(tr_x)
+#     # train model
+#     selection_model = xgb.XGBClassifier(max_depth=15, max_delta_step=1, silent=True, 
+#                         learning_rate=0.3, objective='binary:logistic', nthread=3,
+#                         min_child_weight = 1, scale_pos_weight = 1 )
+#     selection_model.fit(select_tr_x, tr_y, verbose=True)
+#     # eval model
+#     select_va_x = selection.transform(va_x)
+#     va_y_pred = selection_model.predict(select_va_x)
+#     predict_probas = selection_model.predict_proba(te_x)[:,1]
+#     save_preds(predict_probas)
+#     logloss = log_loss(va_y, va_y_pred)
+#     print('Logloss: ', logloss)
+#     s= classification_report(va_y, va_y_pred)
+#     print(s, 'Importance threshold: ', thresh)
 
 
 plot_importance(gbm)
