@@ -112,11 +112,11 @@ if args.of:
     features = features[-1: ]
 
 tr_ui_ = pd.read_csv('../data/pre/new_tr_ui.csv', header=None)
-te_ui_ = pd.read_csv('../data/pre/new_te_ui.csv', header=None).values
+te_ui = pd.read_csv('../data/pre/new_te_ui.csv', header=None).values
 tr_ua_ = pd.read_csv('../data/pre/new_tr_ua.csv', header=None)
-te_ua_ = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
+te_ua = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
 tr_adAppCate_ = pd.read_csv('../data/pre/new_adAppCate_tr.csv', index_col=0)
-te_adAppCate_ = pd.read_csv('../data/pre/new_adAppCate_te.csv', index_col=0).values
+te_adAppCate = pd.read_csv('../data/pre/new_adAppCate_te.csv', index_col=0).values
 tr_df_ = pd.read_csv('../data/pre/new_generated_train.csv')
 te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 
