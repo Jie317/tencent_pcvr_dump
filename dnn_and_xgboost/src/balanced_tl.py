@@ -2,7 +2,7 @@
 # coding: utf-8
 
 d = '../data/pre/' # raw data directory
-
+print('dev stat 22666633')
 import os
 import pandas as pd
 import numpy as np
@@ -27,7 +27,7 @@ te_ori = pd.read_csv('../data/pre/new_generated_test.csv', index_col=0)
 
 
 
-va = tr_ori.sample(frac=.1, random_state=10)
+va = tr_ori.sample(frac=.1, random_state=3)
 tr = tr_ori.drop(va.index, axis=0)
 
 
@@ -36,13 +36,11 @@ va_y = va.label.values.reshape(-1,1)
 tr_y = tr.label.values.reshape(-1,1)
 
 
-features = [ 'positionType', 'connectionType', 'age', 'haveBaby', 'telecomsOperator',
-            'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m']
+# features = [ 'positionType', 'connectionType', 'age', 'haveBaby', 'telecomsOperator',
+#             'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
+#             'marriageStatus', 'appPlatform', 'clickTime_m']
 
-# features = ['appCategory', 'positionType', 'connectionType', 'haveBaby', 'telecomsOperator',
-#             'gender', 'education', 'clickTime_h', 'weekDay',
-#             'marriageStatus', 'appPlatform']
+features = ['appCategory']
 
 
 
@@ -59,7 +57,7 @@ for f in features:
 
     print(tr_stat.values)
 
-    total_tr = 3*max(tr_stat.values)
+    total_tr = 2*max(tr_stat.values)
     new_x = []
     new_y = []
     for cate,occ in zip(tr_stat.index, tr_stat.values):
@@ -78,7 +76,7 @@ for f in features:
     print('Length of new x:', len(new_x))
 
     # no ajust
-    np.random.seed(22)
+    np.random.seed(323)
     i = Input(shape=(1,))
     o = Embedding(np.max(tr_x)+1, 64)(i)
     o = Flatten()(o)
@@ -87,12 +85,12 @@ for f in features:
     model_ = Model(i,o)
     model_.summary()
     model_.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['binary_crossentropy'])
-    model_.fit(tr_x, tr_y,validation_data=(va_x,va_y), verbose=1, epochs=2, batch_size=512,  shuffle=True)
+    model_.fit(tr_x, tr_y,validation_data=(va_x,va_y), verbose=1, epochs=2, batch_size=1024,  shuffle=True)
 
     print('\nUnbalanced model predict:\n', model_.predict(va_.index))
 
     # balanced
-    np.random.seed(22)
+    np.random.seed(323)
     i = Input(shape=(1,))
     o = Embedding(np.max(new_x)+1, 64)(i)
     o = Flatten()(o)
@@ -101,7 +99,7 @@ for f in features:
     model = Model(i,o)
     model.summary()
     model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['binary_crossentropy'])
-    model.fit(new_x, new_y,validation_data=(va_x,va_y), verbose=1, epochs=2, batch_size=1024*4,  shuffle=True)
+    model.fit(new_x, new_y,validation_data=(va_x,va_y), verbose=1, epochs=2, batch_size=4096,  shuffle=True)
 
     print('\nBalanced model predict:\n', model.predict(va_.index))
 
@@ -112,9 +110,9 @@ for f in features:
     model_loss = log_loss(va_y, model.predict(va_x ))
     model_loss_ = log_loss(va_y, model_.predict(va_x))
     print('ideal-model', 'ideal-model_', 'model_-model')
-    print(ideal_loss-model_loss , ideal_loss-model_loss_, model_loss_-model_loss)
+    print('%.8f, %.8f, %.8f'%(ideal_loss-model_loss , model_loss_-model_loss,ideal_loss-model_loss_))
 
-    print(va_-np.ravel(model_.predict(va_.index)), va_-np.ravel(model.predict(va_.index)) )
+    print(va_-np.ravel(model_.predict(va_.index)), '\nBalanced model\n',va_-np.ravel(model.predict(va_.index)) )
 
 
     model.save('balanced_tl_%s_%.6f.h5'%(f,ideal_loss-model_loss))
