@@ -176,13 +176,11 @@ if args.nc:
 
 import pickle
 try:
-    (tr_x,te_x,va_x,tr_y,_,va_y) = pickle.load( open('../data/pre/dump_xgboost.bin', 'rb'))
-    tr_y = np.ravel(tr_y)
-    va_y = np.ravel(va_y)
+    (tr_x,te_x,va_x,tr_y,va_y) = pickle.load( open('../data/pre/dump_xgboost.bin', 'rb'))
     print('Loaded cached data')
 except Exception as e:
-    print('Cached data not found')
     pickle.dump((tr_x,te_x,va_x,tr_y,va_y), open('../data/pre/dump_xgboost.bin', 'wb'))
+    print('Cached data')
 
 
 
