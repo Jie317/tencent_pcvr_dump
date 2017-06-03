@@ -99,7 +99,7 @@ for f in features:
     model = Model(i,o)
     model.summary()
     model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['binary_crossentropy'])
-    model.fit(new_x, new_y,validation_data=(va_x,va_y), verbose=1, epochs=2, batch_size=4096,  shuffle=True)
+    model.fit(new_x, new_y,validation_data=(va_x,va_y), verbose=1, epochs=2, batch_size=10240,  shuffle=True)
 
     print('\nBalanced model predict:\n', model.predict(va_.index))
 
