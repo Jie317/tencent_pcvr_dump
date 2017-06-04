@@ -18,7 +18,7 @@ parser.add_argument('-f', type=int, default=11,
     help='the f most important independent features (<=22)')
 parser.add_argument('-v', type=int, default=1,
     help='verbose')
-parser.add_argument('-va-seed', type=int, default=1,
+parser.add_argument('-va-seed', type=int, default=62,
     help='numpy random seed number to split tr and val')
 parser.add_argument('-vd', type=int, default=24,
     help='which day for validation')
@@ -122,27 +122,25 @@ te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 
 print('\n\nLoaded datasets')
 
-seeds = [62, 44,37, 78, 99, 3456, 786]
 batch_sizes = list(range(1024,8192,1024))
-np.random.shuffle(seeds)
-np.random.shuffle(batch_sizes)
-for seed, bs in zip(seeds, batch_sizes):
-    print('\n\nSeed:', seed, 'Batch size: ', bs)
-    va_ui = tr_ui_.sample(frac=.1, random_state=seed)
+# np.random.shuffle(batch_sizes)
+for bs in batch_sizes:
+    print('\n\nSeed:', args.va_seed, 'Batch size: ', bs)
+    va_ui = tr_ui_.sample(frac=.1, random_state=args.va_seed)
     tr_ui = tr_ui_.drop(va_ui.index, axis=0).values
     va_ui = va_ui.values
 
-    va_ua = tr_ua_.sample(frac=.1, random_state=seed)
+    va_ua = tr_ua_.sample(frac=.1, random_state=args.va_seed)
     tr_ua = tr_ua_.drop(va_ua.index, axis=0).values
     va_ua = va_ua.values
 
 
-    va_adAppCate = tr_adAppCate_.sample(frac=.1, random_state=seed)
+    va_adAppCate = tr_adAppCate_.sample(frac=.1, random_state=args.va_seed)
     tr_adAppCate = tr_adAppCate_.drop(va_adAppCate.index, axis=0).values
     va_adAppCate = va_adAppCate.values
 
     # va_df = tr_df.loc[tr_df['clickTime_d'] == 24]
-    va_df = tr_df_.sample(frac=.1, random_state=seed)
+    va_df = tr_df_.sample(frac=.1, random_state=args.va_seed)
     tr_df = tr_df_.drop(va_df.index, axis=0)
 
 
