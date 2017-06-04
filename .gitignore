@@ -2,8 +2,9 @@
 !*/src/
 !*/data/
 !*/bests/
-
-
+!*/trained_models/
+*/trained_models/*
+!dnn_and_xgboost/trained_models/.gitkeep
 */src/*.pyc
 */src/.~*
 */src/__*
