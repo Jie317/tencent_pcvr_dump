@@ -1,4 +1,5 @@
 print('\n >>>>>>>> Dev new stat2892\n')
+
 import argparse
 trained_model_path = '../trained_models/last_dnn.h5'
 parser = argparse.ArgumentParser(
@@ -46,7 +47,6 @@ g.add_argument('-olv', action='store_true',
 
 args = parser.parse_args()
 print(args)
-
 import os
 import shutil
 import json
@@ -105,7 +105,7 @@ class predCallback(Callback):
         'connectionType', 'telecomsOperator', 'conversionTime_d', 'label']
 '''    
 # ========================= 1 Data preparation ========================= #
-features = ['appCategory', 'appID', 'connectionType', 'age', 'hometown', 'haveBaby', 'telecomsOperator', 'gender', 'education', 'clickTime_h', 'weekDay',
+features = ['appID', 'connectionType', 'age', 'telecomsOperator', 'gender', 'education', 'clickTime_h', 'weekDay',
             'marriageStatus', 'appPlatform', 'clickTime_m']
 features = features[:args.f]
 if args.of: 
@@ -120,11 +120,14 @@ te_adAppCate = pd.read_csv('../data/pre/new_adAppCate_te.csv', index_col=0).valu
 tr_df_ = pd.read_csv('../data/pre/new_generated_train.csv')
 te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 
+print('\n\nLoaded datasets')
 
-seeds = list(range(20,100,3))
+seeds = [62, 44,37, 78, 99, 3456, 786]
+batch_sizes = list(range(1024,8192,1024))
 np.random.shuffle(seeds)
-for seed in seeds:
-    print('\n\nSeed:', seed)
+np.random.shuffle(batch_sizes)
+for seed, bs in zip(seeds, batch_sizes):
+    print('\n\nSeed:', seed, 'Batch size: ', bs)
     va_ui = tr_ui_.sample(frac=.1, random_state=seed)
     tr_ui = tr_ui_.drop(va_ui.index, axis=0).values
     va_ui = va_ui.values
@@ -175,6 +178,8 @@ for seed in seeds:
     np.random.shuffle(tr)
     input_length = len(tr[0])-1
     max_feature = max(tr.max(), va.max() if args.olv else 0, te_x.max())+1
+    max_feature_ui = max(tr_ui.max(), te_ui.max(), va_ui.max())+1
+    max_feature_ua = max(tr_ua.max(), te_ua.max(), va_ua.max())+1
     max_f_cols = tr_df.max().values[:-1]+1
     print('--- Train cols: ', tr_df.columns)
     print('--- Validation day:', args.vd, len(va_df))
@@ -270,26 +275,33 @@ for seed in seeds:
             va_x = s_c(va)+[va_ui, va_ua]
 
         if args.m=='mlp':
-            print('Building MLP')
+            print('Building MLP >>>>>>>>>>>')
             inp_x = Input(shape=(input_length, ))
+            inp_adCate = Input(shape=(28, ))
             inp_ui = Input(shape=(28, ))
             inp_ua = Input(shape=(28, ))
 
-            o_x = Embedding(max_feature, 16)(inp_x)
+            o_x = Embedding(max_feature, 64)(inp_x)
+            o_adCate = Embedding(max_feature, 64)(inp_adCate)
+            o_ui = Embedding(max_feature, 64)(inp_ui)
+            o_ua = Embedding(max_feature, 64)(inp_ua)
             o_x = Flatten()(o_x) # 16* max_feature
+            o_adCate = Flatten()(o_adCate) # 16* max_feature
+            o_ui = Flatten()(o_ui) # 16* max_feature
+            o_ua = Flatten()(o_ua) # 16* max_feature
 
-            y = concatenate([o_x, inp_ui, inp_ua])
+            y = concatenate([o_x, o_adCate, o_ui, o_ua])
 
-            # y = Dropout(.3)(y)
-            y = Dense(1024, activation='relu', kernel_regularizer='l2')(y)
-            y = Dense(512, activation='relu')(y)
+            y = Dense(1024, activation='relu')(y)
+            # y = Dense(1024, activation='tanh', kernel_regularizer='l1')(y)
+            y = Dense(512, activation='tanh')(y)
             y = Dense(1, activation='sigmoid')(y)   
 
-            model = Model([inp_x, inp_ui, inp_ua], y)
+            model = Model([inp_x, inp_adCate, inp_ui, inp_ua], y)
 
-            tr_x = [tr_x, tr_ui, tr_ua]
-            te_x = [te_x, te_ui, te_ua]
-            va_x = [va_x, va_ui, va_ua]
+            tr_x = [tr_x, tr_adAppCate, tr_ui, tr_ua]
+            te_x = [te_x, te_adAppCate, te_ui, te_ua]
+            va_x = [va_x, va_adAppCate, va_ui, va_ua]
 
 
         if args.m=='elr': # logistic regression after embedding
@@ -309,7 +321,7 @@ for seed in seeds:
         # 5 fit the model (training)  callbacks=[predCallback(te_x)]   validation_data=(va_x, va_y), 
         model.fit(tr_x, tr_y, epochs=args.e, validation_data=(va_x, va_y), 
                                         shuffle=True, verbose=args.v,
-                                        batch_size=batch_size, callbacks=[predCallback(te_x)])
+                                        batch_size=bs)
 
         if not args.ns: 
             model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
