@@ -20,6 +20,8 @@ parser.add_argument('-v', type=int, default=1,
     help='verbose')
 parser.add_argument('-b', type=int, default=4096,
     help='batch size')
+parser.add_argument('-mt', type=int, default=0,
+    help='model type')
 parser.add_argument('-va-seed', type=int, default=62,
     help='numpy random seed number to split tr and val')
 parser.add_argument('-va', action='store_true', 
@@ -105,6 +107,30 @@ class predCallback(Callback):
         'advertiserID', 'appID', 'appPlatform', 'positionID', 'sitesetID',
         'positionType', 'weekDay', 'clickTime_d', 'clickTime_h', 'clickTime_m',
         'connectionType', 'telecomsOperator', 'conversionTime_d', 'label']
+OrderedDict([('appCategory', 0.11342039643011995),
+           ('positionID', 0.097800108293958354),
+           ('positionType', 0.087460470534174911),
+           ('creativeID', 0.071309827665513831),
+           ('appID', 0.06958037043067912),
+           ('adID', 0.063169867995414214),
+           ('advertiserID', 0.05492409862736055),
+           ('camgaignID', 0.050796291439061121),
+           ('sitesetID', 0.013700972348893198),
+           ('connectionType', 0.010308483261562163),
+           ('residence', 0.0075065408905755091),
+           ('age', 0.006662250035074235),
+           ('hometown', 0.0057415423374340075),
+           ('haveBaby', 0.0050835138043705281),
+           ('telecomsOperator', 0.0049696062876111837),
+           ('gender', 0.0046607920728349225),
+           ('education', 0.0030160253068509456),
+           ('clickTime_h', 0.0029165451700999038),
+           ('clickTime_d', 0.0028077837477102278),
+           ('weekDay', 0.001772181032721335),
+           ('marriageStatus', 0.0016869540469555094),
+           ('appPlatform', 0.0008981783007564663),
+           ('clickTime_m', 0.00072661907607473827),
+           ('userID', unkown)])
 '''    
 # ========================= 1 Data preparation ========================= #
 # features = ['appID', 'connectionType', 'age', 'telecomsOperator', 'gender', 'education', 'clickTime_h', 'weekDay',
@@ -278,7 +304,6 @@ for bs in batch_sizes:
                 col_in = Input(shape=(1,))
                 col_out = Embedding(int(fe), f(i))(col_in)
                 col_out = Flatten()(col_out)
-                col_out = BatchNormalization()(col_out) 
 
                 cols_in.append(col_in)
                 cols_out.append(col_out)
@@ -287,7 +312,6 @@ for bs in batch_sizes:
                 col_in = Input(shape=(1,))
                 col_out = Embedding(int(f), 8)(col_in)
                 col_out = Flatten()(col_out)
-                col_out = BatchNormalization()(col_out) 
 
                 cols_in.append(col_in)
                 cols_out.append(col_out) 
@@ -296,17 +320,41 @@ for bs in batch_sizes:
                 col_in = Input(shape=(1,))
                 col_out = Embedding(int(f), 8)(col_in)
                 col_out = Flatten()(col_out)
-                col_out = BatchNormalization()(col_out) 
 
                 cols_in.append(col_in)
                 cols_out.append(col_out)
 
 
             cols_concatenated = concatenate(cols_out)
-            y = Dense(1024, activation='relu', 
-                      kernel_regularizer='l1')(cols_concatenated)
-            y = Dropout(.3)(y)
-            y = Dense(512, activation='relu')(y)
+            if args.mt == 0:
+                y = Dense(1024, activation='relu', 
+                          kernel_regularizer='l1')(cols_concatenated)
+                y = Dropout(.3)(y)
+                y = Dense(512, activation='relu')(y)
+
+            if args.mt == 1:
+                y = Dense(1024, activation='relu', 
+                          kernel_regularizer='l1')(cols_concatenated)
+                y = Dropout(.2)(y)
+                y = Dense(512, activation='relu')(y)
+
+            if args.mt == 2:
+                y = Dense(1024, activation='relu', 
+                          kernel_regularizer='l1')(cols_concatenated)
+                y = Dropout(.1)(y)
+                y = Dense(512, activation='relu')(y)
+
+            if args.mt == 3:
+                y = Dense(1024, activation='relu')(cols_concatenated)
+                y = Dropout(.1)(y)
+                y = Dense(512, activation='relu')(y)
+
+            if args.mt == 4:
+                y = Dense(1024, activation='relu')(cols_concatenated)
+                y = Dense(512, activation='relu')(y)
+                y = Dense(512, activation='tanh')(y)
+
+
             y = Dense(1, activation='sigmoid')(y)  
             model = Model(cols_in, y)  
 
