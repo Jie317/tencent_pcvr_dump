@@ -122,7 +122,7 @@ te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 
 print('\n\nLoaded datasets')
 
-batch_sizes = list(range(1024,8192,1024))
+batch_sizes = list(range(1024,8192,1024)).reverse()
 # np.random.shuffle(batch_sizes)
 for bs in batch_sizes:
     print('\n\nSeed:', args.va_seed, 'Batch size: ', bs)
@@ -280,9 +280,10 @@ for bs in batch_sizes:
             inp_ua = Input(shape=(28, ))
 
             o_x = Embedding(max_feature, 64)(inp_x)
-            o_adCate = Embedding(max_feature, 64)(inp_adCate)
-            o_ui = Embedding(max_feature, 64)(inp_ui)
-            o_ua = Embedding(max_feature, 64)(inp_ua)
+            o_adCate = Embedding(2, 64)(inp_adCate)
+            o_ui = Embedding(max_feature_ui, 64)(inp_ui)
+            o_ua = Embedding(max_feature_ua, 64)(inp_ua)
+
             o_x = Flatten()(o_x) # 16* max_feature
             o_adCate = Flatten()(o_adCate) # 16* max_feature
             o_ui = Flatten()(o_ui) # 16* max_feature
