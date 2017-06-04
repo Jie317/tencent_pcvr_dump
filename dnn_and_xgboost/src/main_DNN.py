@@ -14,14 +14,16 @@ parser.add_argument('-nm', action='store_true',
     help='not mask future information')
 parser.add_argument('-e', type=int, default=5,
     help='epochs')
-parser.add_argument('-f', type=int, default=11,
-    help='the f most important independent features (<=22)')
+parser.add_argument('-f', type=int, default=24,
+    help='the f most important independent features (<=24)')
 parser.add_argument('-v', type=int, default=1,
     help='verbose')
+parser.add_argument('-b', type=int, default=4096,
+    help='batch size')
 parser.add_argument('-va-seed', type=int, default=62,
     help='numpy random seed number to split tr and val')
-parser.add_argument('-vd', type=int, default=24,
-    help='which day for validation')
+parser.add_argument('-va', action='store_true', 
+    help='split validation from train')
 parser.add_argument('-s', action='store_true',
     help='print model summary')
 parser.add_argument('-nfe', action='store_true',
@@ -105,16 +107,24 @@ class predCallback(Callback):
         'connectionType', 'telecomsOperator', 'conversionTime_d', 'label']
 '''    
 # ========================= 1 Data preparation ========================= #
-features = ['appID', 'connectionType', 'age', 'telecomsOperator', 'gender', 'education', 'clickTime_h', 'weekDay',
-            'marriageStatus', 'appPlatform', 'clickTime_m']
+# features = ['appID', 'connectionType', 'age', 'telecomsOperator', 'gender', 'education', 'clickTime_h', 'weekDay',
+#             'marriageStatus', 'appPlatform', 'clickTime_m']
+features = ['appCategory', 'positionID', 'positionType', 'creativeID', 'appID', 'adID',
+            'advertiserID', 'camgaignID', 'sitesetID', 'connectionType',
+            'residence', 'age', 'hometown', 'haveBaby', 'telecomsOperator',
+            'gender', 'education', 'clickTime_h', 'clickTime_d', 'weekDay',
+            'marriageStatus', 'appPlatform', 'clickTime_m', 'userID']
+
+             
 features = features[:args.f]
+print(features, len(features))
 if args.of: 
     features = features[-1: ]
 
 tr_ui_ = pd.read_csv('../data/pre/new_tr_ui.csv', header=None)
-te_ui = pd.read_csv('../data/pre/new_te_ui.csv', header=None).values
+te_ui_ = pd.read_csv('../data/pre/new_te_ui.csv', header=None)
 tr_ua_ = pd.read_csv('../data/pre/new_tr_ua.csv', header=None)
-te_ua = pd.read_csv('../data/pre/new_te_ua.csv', header=None).values
+te_ua_ = pd.read_csv('../data/pre/new_te_ua.csv', header=None)
 tr_adAppCate_ = pd.read_csv('../data/pre/new_adAppCate_tr.csv', index_col=0)
 te_adAppCate = pd.read_csv('../data/pre/new_adAppCate_te.csv', index_col=0).values
 tr_df_ = pd.read_csv('../data/pre/new_generated_train.csv')
@@ -122,28 +132,40 @@ te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 
 print('\n\nLoaded datasets')
 
-batch_sizes = list(range(1024,8192,1024)).reverse()
+# batch_sizes = list(range(3072,8192,1024))
+# batch_sizes.reverse()
 # np.random.shuffle(batch_sizes)
+batch_sizes = [args.b]
 for bs in batch_sizes:
     print('\n\nSeed:', args.va_seed, 'Batch size: ', bs)
-    va_ui = tr_ui_.sample(frac=.1, random_state=args.va_seed)
+    frac = .1
+    if not args.va:
+        frac = 0
+        print('Not using validation')
+
+    va_ui = tr_ui_.sample(frac=frac, random_state=args.va_seed)
     tr_ui = tr_ui_.drop(va_ui.index, axis=0).values
     va_ui = va_ui.values
+    te_ui = te_ui_.values
 
-    va_ua = tr_ua_.sample(frac=.1, random_state=args.va_seed)
+    va_ua = tr_ua_.sample(frac=frac, random_state=args.va_seed)
     tr_ua = tr_ua_.drop(va_ua.index, axis=0).values
     va_ua = va_ua.values
+    te_ua = te_ua_.values
 
 
-    va_adAppCate = tr_adAppCate_.sample(frac=.1, random_state=args.va_seed)
+    va_adAppCate = tr_adAppCate_.sample(frac=frac, random_state=args.va_seed)
     tr_adAppCate = tr_adAppCate_.drop(va_adAppCate.index, axis=0).values
     va_adAppCate = va_adAppCate.values
 
     # va_df = tr_df.loc[tr_df['clickTime_d'] == 24]
-    va_df = tr_df_.sample(frac=.1, random_state=args.va_seed)
+    va_df = tr_df_.sample(frac=frac, random_state=args.va_seed)
     tr_df = tr_df_.drop(va_df.index, axis=0)
 
-
+    if args.va:
+        va_df = va_df[features+['label']]
+        va = va_df.values
+        va_x, va_y = va[:, :-1], va[:, -1:]
 
 
     if args.fra:
@@ -167,26 +189,28 @@ for bs in batch_sizes:
             tr_df.loc[tr_df['conversionTime_d'] >= args.vd, 'label'] = 0
 
     tr_df = tr_df[features+['label']]
-    va_df = va_df[features+['label']]
     te_df = te_df_[features]
 
     tr = tr_df.values
-    va = va_df.values
     te_x = te_df.values
     np.random.shuffle(tr)
     input_length = len(tr[0])-1
-    max_feature = max(tr.max(), va.max() if args.olv else 0, te_x.max())+1
-    max_feature_ui = max(tr_ui.max(), te_ui.max(), va_ui.max())+1
-    max_feature_ua = max(tr_ua.max(), te_ua.max(), va_ua.max())+1
-    max_f_cols = tr_df.max().values[:-1]+1
+    max_feature = max(tr.max(), va.max() if args.va else 0, te_x.max())+1
+    max_feature_ui = max(tr_ui.max(), te_ui.max(), va_ui.max() if args.va else 0)+1
+    max_feature_ua = max(tr_ua.max(), te_ua.max(), va_ua.max() if args.va else 0)+1
+    max_f_cols = pd.concat([tr_df_[features], te_df_[features]]).max().values +1
+
+    max_f_ua_cols = pd.concat([tr_ua_, te_ua_]).max().values +1
+    max_f_ui_cols = pd.concat([tr_ui_, te_ui_]).max().values +1
+
     print('--- Train cols: ', tr_df.columns)
-    print('--- Validation day:', args.vd, len(va_df))
-    print('--- Max feature:', max_feature)
+    print('--- Max feature:', max_feature, max_feature_ua, max_feature_ui)
     print('--- Max column features:', max_f_cols)
+    print('--- Max column ua features:', max_f_ua_cols)
+    print('--- Max column ui features:', max_f_ui_cols)
     print('--- Selected most important features:', args.f)
 
     tr_x, tr_y = tr[:, :-1], tr[:, -1:]
-    va_x, va_y = va[:, :-1], va[:, -1:]
     tr_avg = np.average(tr_y)
 
     # add two lists
@@ -203,7 +227,6 @@ for bs in batch_sizes:
     metrics = ['binary_crossentropy'] # can't be empty in this script
 
 
-    batch_size = 4096
     workers = 1
 
     # 0.2 parameter instantiations
@@ -238,9 +261,8 @@ for bs in batch_sizes:
 
             tr_x = list(zip(tr_ui, tr_ua, tr_adAppCate))
             te_x = list(zip(te_ui, te_ua, te_adAppCate))
-            va_x = list(zip(va_ui, va_ua, va_adAppCate))
-
-
+            if args.va: va_x = list(zip(va_ui, va_ua, va_adAppCate))
+        
         if args.m=='mlp_fe': # multilayer perceptrons
             print('Using fine-grained embedding layers')
             cols_in = []
@@ -248,29 +270,49 @@ for bs in batch_sizes:
             inp_ui = Input(shape=(28, ))
             inp_ua = Input(shape=(28, ))
 
-            f = lambda x: int((math.log10(x)+1)*4)
-            print([f(fe) for fe in max_f_cols])
-            for fe in max_f_cols:
+            # f = lambda x: int((math.log10(x)+1)*4-3)
+            emb_dims = [32-2*i for i in range(16)] + [2]*(len(features)-16)
+            f = lambda idx: emb_dims[idx]
+            print([f(idx) for idx,_ in enumerate(max_f_cols)])
+            for i,fe in enumerate(max_f_cols):
                 col_in = Input(shape=(1,))
-                col_out = Embedding(int(fe), f(fe))(col_in)
+                col_out = Embedding(int(fe), f(i))(col_in)
                 col_out = Flatten()(col_out)
                 col_out = BatchNormalization()(col_out) 
 
                 cols_in.append(col_in)
                 cols_out.append(col_out)
 
-            cols_concatenated = concatenate(cols_out+[inp_ui, inp_ua])
+            for f in max_f_ui_cols:
+                col_in = Input(shape=(1,))
+                col_out = Embedding(int(f), 8)(col_in)
+                col_out = Flatten()(col_out)
+                col_out = BatchNormalization()(col_out) 
+
+                cols_in.append(col_in)
+                cols_out.append(col_out) 
+                
+            for f in max_f_ua_cols:
+                col_in = Input(shape=(1,))
+                col_out = Embedding(int(f), 8)(col_in)
+                col_out = Flatten()(col_out)
+                col_out = BatchNormalization()(col_out) 
+
+                cols_in.append(col_in)
+                cols_out.append(col_out)
+
+
+            cols_concatenated = concatenate(cols_out)
             y = Dense(1024, activation='relu', 
                       kernel_regularizer='l1')(cols_concatenated)
             y = Dropout(.3)(y)
-            y = Dense(1024, activation='relu')(y)
             y = Dense(512, activation='relu')(y)
             y = Dense(1, activation='sigmoid')(y)  
-            model = Model(cols_in+[inp_ui, inp_ua], y)  
+            model = Model(cols_in, y)  
 
-            tr_x = s_c(tr_x)+[tr_ui, tr_ua]
-            te_x = s_c(te)+[te_ui, te_ua]
-            va_x = s_c(va)+[va_ui, va_ua]
+            tr_x = s_c(np.hstack([tr_x, tr_ui, tr_ua]))
+            te_x = s_c(np.hstack([te_x, te_ui, te_ua]))
+            if args.va: va_x = s_c(np.hstack([va_x, va_ui, va_ua]))
 
         if args.m=='mlp':
             print('Building MLP >>>>>>>>>>>')
@@ -279,10 +321,11 @@ for bs in batch_sizes:
             inp_ui = Input(shape=(28, ))
             inp_ua = Input(shape=(28, ))
 
-            o_x = Embedding(max_feature, 64)(inp_x)
-            o_adCate = Embedding(2, 64)(inp_adCate)
-            o_ui = Embedding(max_feature_ui, 64)(inp_ui)
-            o_ua = Embedding(max_feature_ua, 64)(inp_ua)
+            o_x = Embedding(max_feature, 16)(inp_x)
+
+            o_adCate = Embedding(2, 2)(inp_adCate)
+            o_ui = Embedding(max_feature_ui, 16)(inp_ui)
+            o_ua = Embedding(max_feature_ua, 16)(inp_ua)
 
             o_x = Flatten()(o_x) # 16* max_feature
             o_adCate = Flatten()(o_adCate) # 16* max_feature
@@ -291,16 +334,16 @@ for bs in batch_sizes:
 
             y = concatenate([o_x, o_adCate, o_ui, o_ua])
 
-            y = Dense(1024, activation='relu')(y)
-            # y = Dense(1024, activation='tanh', kernel_regularizer='l1')(y)
-            y = Dense(512, activation='tanh')(y)
-            y = Dense(1, activation='sigmoid')(y)   
+            y = Dense(1024, activation='relu', kernel_regularizer='l1')(y)
+            y = Dropout(.3)(y)
+            y = Dense(512, activation='relu')(y)
+            y = Dense(1, activation='sigmoid')(y)
 
             model = Model([inp_x, inp_adCate, inp_ui, inp_ua], y)
 
             tr_x = [tr_x, tr_adAppCate, tr_ui, tr_ua]
             te_x = [te_x, te_adAppCate, te_ui, te_ua]
-            va_x = [va_x, va_adAppCate, va_ui, va_ua]
+            if args.va: va_x = [va_x, va_adAppCate, va_ui, va_ua]
 
 
         if args.m=='elr': # logistic regression after embedding
@@ -318,9 +361,12 @@ for bs in batch_sizes:
         print('\n', strftime('%c'))
 
         # 5 fit the model (training)  callbacks=[predCallback(te_x)]   validation_data=(va_x, va_y), 
-        model.fit(tr_x, tr_y, epochs=args.e, validation_data=(va_x, va_y), 
-                                        shuffle=True, verbose=args.v, callbacks=[predCallback(te_x)] ,
-                                        batch_size=bs)
+        if args.va: vali_data = (va_x, va_y)
+        else: vali_data = None
+        model.fit(tr_x, tr_y, epochs=args.e, validation_data=vali_data, 
+                    shuffle=True, verbose=args.v, 
+                    callbacks=[predCallback(te_x)] ,
+                    batch_size=bs)
 
         if not args.ns: 
             model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
