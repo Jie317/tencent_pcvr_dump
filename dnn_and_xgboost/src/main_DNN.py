@@ -320,7 +320,7 @@ for seed, bs in zip(seeds, batch_sizes):
 
         # 5 fit the model (training)  callbacks=[predCallback(te_x)]   validation_data=(va_x, va_y), 
         model.fit(tr_x, tr_y, epochs=args.e, validation_data=(va_x, va_y), 
-                                        shuffle=True, verbose=args.v,
+                                        shuffle=True, verbose=args.v, callbacks=[predCallback(te_x)] ,
                                         batch_size=bs)
 
         if not args.ns: 
