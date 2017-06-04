@@ -122,6 +122,7 @@ te_df_ = pd.read_csv('../data/pre/new_generated_test.csv')
 
 
 seeds = list(range(20,100,3))
+seeds = [44,62]
 np.random.shuffle(seeds)
 for seed in seeds:
     print('\n\nSeed:', seed)
