@@ -67,6 +67,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint, Callback
 from keras.layers import Dense, Embedding, LSTM, GRU, SimpleRNN, BatchNormalization
 from keras.layers import Dropout, Bidirectional, Flatten, Input, Reshape
 from keras.layers.merge import Concatenate, Add, concatenate, add
+from keras.optimizers import rmsprop, sgd
 
 def s_c(x):
     return [x[:, i:i+1] for i in range(len(x[0]))]
@@ -391,7 +392,7 @@ for bs in batch_sizes:
             
     if not args.et:
         # 4 compile model
-        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        model.compile(optimizer=rmsprop(lr=.0001), loss=loss, metrics=metrics)
         if args.s: model.summary() 
         print('\n', strftime('%c'))
 
