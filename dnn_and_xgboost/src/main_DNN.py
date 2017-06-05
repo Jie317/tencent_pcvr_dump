@@ -285,10 +285,6 @@ for bs in batch_sizes:
             model.add(Dense(1, activation='sigmoid')) 
             model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-            tr_x = list(zip(tr_ui, tr_ua, tr_adAppCate))
-            te_x = list(zip(te_ui, te_ua, te_adAppCate))
-            if args.va: va_x = list(zip(va_ui, va_ua, va_adAppCate))
-        
         if args.m=='mlp_fe': # multilayer perceptrons
             print('Using fine-grained embedding layers')
             cols_in = []
@@ -347,7 +343,7 @@ for bs in batch_sizes:
             if args.mt == 3:
                 y = Dense(1024, activation='relu')(cols_concatenated)
                 y = Dropout(.1)(y)
-                y = Dense(512, activation='relu')(y)
+                y = Dense(1024, activation='tanh')(y)
 
             if args.mt == 4:
                 y = Dense(1024, activation='relu')(cols_concatenated)
@@ -357,10 +353,6 @@ for bs in batch_sizes:
 
             y = Dense(1, activation='sigmoid')(y)  
             model = Model(cols_in, y)  
-
-            tr_x = s_c(np.hstack([tr_x, tr_ui, tr_ua]))
-            te_x = s_c(np.hstack([te_x, te_ui, te_ua]))
-            if args.va: va_x = s_c(np.hstack([va_x, va_ui, va_ua]))
 
         if args.m=='mlp':
             print('Building MLP >>>>>>>>>>>')
@@ -389,11 +381,6 @@ for bs in batch_sizes:
 
             model = Model([inp_x, inp_adCate, inp_ui, inp_ua], y)
 
-            tr_x = [tr_x, tr_adAppCate, tr_ui, tr_ua]
-            te_x = [te_x, te_adAppCate, te_ui, te_ua]
-            if args.va: va_x = [va_x, va_adAppCate, va_ui, va_ua]
-
-
         if args.m=='elr': # logistic regression after embedding
             model = Sequential()
             model.add(Embedding(max_feature, 16, input_length = input_length))
@@ -408,6 +395,31 @@ for bs in batch_sizes:
         if args.s: model.summary() 
         print('\n', strftime('%c'))
 
+
+
+# ================================================================================== # 
+# transform datasets
+        if args.m=='rnn': # recurrent networks
+            tr_x = list(zip(tr_ui, tr_ua, tr_adAppCate))
+            te_x = list(zip(te_ui, te_ua, te_adAppCate))
+            if args.va: va_x = list(zip(va_ui, va_ua, va_adAppCate))
+
+        if args.m=='mlp_fe': # multilayer perceptrons
+            tr_x = s_c(np.hstack([tr_x, tr_ui, tr_ua]))
+            te_x = s_c(np.hstack([te_x, te_ui, te_ua]))
+            if args.va: va_x = s_c(np.hstack([va_x, va_ui, va_ua]))
+
+        if args.m=='mlp':
+            tr_x = [tr_x, tr_adAppCate, tr_ui, tr_ua]
+            te_x = [te_x, te_adAppCate, te_ui, te_ua]
+            if args.va: va_x = [va_x, va_adAppCate, va_ui, va_ua]
+
+        if args.m=='elr': # logistic regression after embedding
+            tr_x = tr_x
+            te_x = te_x
+            if args.va: va_x = va_x
+
+# ================================================================================== #
         # 5 fit the model (training)  callbacks=[predCallback(te_x)]   validation_data=(va_x, va_y), 
         if args.va: vali_data = (va_x, va_y)
         else: vali_data = None
@@ -417,9 +429,10 @@ for bs in batch_sizes:
                     batch_size=bs)
 
         if not args.ns: 
-            model.save('../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S"))
+            p_model = '../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S")
+            model.save(p_model)
             model.save(trained_model_path)
-            print('Saved model')
+            print('Saved model: ', p_model)
 
 
     print('Runtime:', str(datetime.timedelta(seconds=int(time()-start))))
