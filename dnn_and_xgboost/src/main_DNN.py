@@ -4,13 +4,13 @@ import argparse
 trained_model_path = '../trained_models/last_dnn.h5'
 parser = argparse.ArgumentParser(
     description='DNNs on Keras to predict conversion rate.')
-parser.add_argument('-et', type=str, default=None, 
+parser.add_argument('--et', type=str, default=None, 
     help='evaluate trained model (the last run by default))')
-parser.add_argument('-ns', action='store_true', 
+parser.add_argument('--ns', action='store_true', 
     help='don\'t save model in the end')
-parser.add_argument('-of', action='store_true', 
+parser.add_argument('--of', action='store_true', 
     help='use only one feature')
-parser.add_argument('-nm', action='store_true', 
+parser.add_argument('--nm', action='store_true', 
     help='not mask future information')
 parser.add_argument('-e', type=int, default=5,
     help='epochs')
@@ -20,22 +20,28 @@ parser.add_argument('-v', type=int, default=1,
     help='verbose')
 parser.add_argument('-b', type=int, default=4096,
     help='batch size')
-parser.add_argument('-mt', type=int, default=0,
+parser.add_argument('--opt', type=str, default='adagrad',
+    help='batch size')
+parser.add_argument('--mt', type=int, default=3,
     help='model type')
-parser.add_argument('-va-seed', type=int, default=62,
+parser.add_argument('--va-seed', type=int, default=62,
     help='numpy random seed number to split tr and val')
-parser.add_argument('-va', action='store_true', 
+parser.add_argument('--va', action='store_true', 
     help='split validation from train')
 parser.add_argument('-s', action='store_true',
     help='print model summary')
-parser.add_argument('-nfe', action='store_true',
+parser.add_argument('--ne', action='store_true',
+    help='use native embedding')
+parser.add_argument('--nfe', action='store_true',
     help='not use fine-grained embedding layers')
-parser.add_argument('-ct', action='store_true',
+parser.add_argument('--ct', action='store_true',
     help='continue training last model')
-parser.add_argument('-mess', type=str, default='no_mess',
+parser.add_argument('--mess', type=str, default='no_mess',
     help='leave a message')
 parser.add_argument('-m', type=str, default='mlp', required=True,
                     help='model name - lr | mlp | mlp_fe | elr | rf | xgb')
+parser.add_argument('--emb', type=str, default='n_vd', required=True,
+                    help='embedding mode - n_fd | n_vd | s ')
 
 
 g = parser.add_mutually_exclusive_group(required=False)
@@ -67,7 +73,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint, Callback
 from keras.layers import Dense, Embedding, LSTM, GRU, SimpleRNN, BatchNormalization
 from keras.layers import Dropout, Bidirectional, Flatten, Input, Reshape
 from keras.layers.merge import Concatenate, Add, concatenate, add
-from keras.optimizers import rmsprop, sgd
+from keras.optimizers import rmsprop, sgd, adam, adagrad
 
 def s_c(x):
     return [x[:, i:i+1] for i in range(len(x[0]))]
@@ -249,7 +255,8 @@ for bs in batch_sizes:
     # ====================== 2 Build model and training ==================== #
 
     # 0 hyperparameters
-    optimizer = 'rmsprop' # rmsprop, adam
+    if 'rmsprop' in args.opt: optimizer = rmsprop(lr=.0001)
+    else: optimizer = args.opt   # rmsprop(lr=.0001) rmsprop, adam 'adagrad'
     loss = 'binary_crossentropy'
     metrics = ['binary_crossentropy'] # can't be empty in this script
 
@@ -259,7 +266,7 @@ for bs in batch_sizes:
     # 0.2 parameter instantiations
     tbCallBack = TensorBoard(log_dir='../meta/tbGraph/', histogram_freq=0,
                  write_graph=True, write_images=True)
-    checkpoint = ModelCheckpoint('../trained_models/{epoch:02d}-{val_loss:.4f}.h5', monitor='val_loss', 
+    checkpoint = ModelCheckpoint('../trained_models/cp_{epoch:02d}-{val_loss:.4f}.h5', monitor='val_loss', 
                  verbose=1, save_best_only=True, period=1)
 
 
@@ -284,7 +291,6 @@ for bs in batch_sizes:
             # model.add(LSTM(32, activation='tanh'))
             model.add(Dense(64, activation='tanh')) 
             model.add(Dense(1, activation='sigmoid')) 
-            model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
         if args.m=='mlp_fe': # multilayer perceptrons
             print('Using fine-grained embedding layers')
@@ -299,7 +305,10 @@ for bs in batch_sizes:
             print([f(idx) for idx,_ in enumerate(max_f_cols)])
             for i,fe in enumerate(max_f_cols):
                 col_in = Input(shape=(1,))
-                col_out = Embedding(int(fe), f(i))(col_in)
+                if args.emb == 'n_vd': col_out = Embedding(int(fe), f[i], name=features[i])(col_in)
+                if args.emb == 'n_fd': col_out = Embedding(int(fe), 16, name=features[i])(col_in)
+                if args.emb == 's': col_out = Embedding(int(fe), 16, name=features[i])(col_in)
+
                 col_out = Flatten()(col_out)
 
                 cols_in.append(col_in)
@@ -344,7 +353,7 @@ for bs in batch_sizes:
             if args.mt == 3:
                 y = Dense(1024, activation='relu')(cols_concatenated)
                 y = Dropout(.1)(y)
-                y = Dense(1024, activation='tanh')(y)
+                y = Dense(1024, activation='relu')(y)
 
             if args.mt == 4:
                 y = Dense(1024, activation='relu')(cols_concatenated)
@@ -354,6 +363,14 @@ for bs in batch_sizes:
 
             y = Dense(1, activation='sigmoid')(y)  
             model = Model(cols_in, y)  
+
+            # set weights for embedding layers
+            if args.emb == 's':
+                for f in features:
+                    layer = model.get_layer(f)
+                    layer.set_weights([np.loadtxt('emb_matrix/%s'%f)])
+                    layer.trainable = False
+                print('\nLoaded synthetic matrices to embedding layers')
 
         if args.m=='mlp':
             print('Building MLP >>>>>>>>>>>')
@@ -392,7 +409,7 @@ for bs in batch_sizes:
             
     if not args.et:
         # 4 compile model
-        model.compile(optimizer=rmsprop(lr=.0001), loss=loss, metrics=metrics)
+        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
         if args.s: model.summary() 
         print('\n', strftime('%c'))
 
@@ -426,14 +443,22 @@ for bs in batch_sizes:
         else: vali_data = None
         model.fit(tr_x, tr_y, epochs=args.e, validation_data=vali_data, 
                     shuffle=True, verbose=args.v, 
-                    callbacks=[predCallback(te_x)] ,
+                    callbacks=[predCallback(te_x), checkpoint] ,
                     batch_size=bs)
 
         if not args.ns: 
-            p_model = '../trained_models/%s_dnn.h5' % strftime("%m%d_%H%M%S")
+            stp = strftime("%m%d_%H%M%S")
+            p_model = '../trained_models/%s_dnn.h5' % stp
             model.save(p_model)
             model.save(trained_model_path)
-            print('Saved model: ', p_model)
+            p_code = 'backup_mains/%s_main_DNN.py'%stp
+            shutil.copyfile('main_DNN.py', p_code)
+            with open(p_code, 'a+') as c: c.write('\n\n\n####%s'%args)
+            print('Saved model: ', p_model, 'Saved main:', p_code)
+
+
+            if args.emb == 's':
+                print (model.get_layer('appID').get_weights()[0][:10])
 
 
     print('Runtime:', str(datetime.timedelta(seconds=int(time()-start))))
