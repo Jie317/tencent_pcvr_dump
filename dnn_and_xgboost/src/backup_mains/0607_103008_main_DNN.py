@@ -478,3 +478,7 @@ for bs in batch_sizes:
 
     predict_probas = np.ravel(model.predict(te_x, batch_size=4096*2, verbose=args.v))
     save_preds(predict_probas)
+
+
+
+####Namespace(b=1024, ct=False, e=5, emb='n_vd', et=None, f=16, fra=False, m='mlp_fe', mess='comparison fixed dims and var dims', mt=3, ne=False, nfe=False, nm=False, ns=False, of=False, olv=False, opt='adagrad', rml=False, s=False, tdo=False, v=1, va=0.1, va_seed=62)
